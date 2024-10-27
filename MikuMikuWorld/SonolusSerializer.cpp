@@ -35,7 +35,7 @@ namespace MikuMikuWorld
 		if (compressData)
 			serializedBytes = IO::deflateGzip(serializedBytes);
 
-		IO::File levelFile(filename, "wb");
+		IO::File levelFile(filename, IO::FileMode::WriteBinary);
 		levelFile.writeAllBytes(serializedBytes);
 		levelFile.flush();
 		levelFile.close();
@@ -45,7 +45,7 @@ namespace MikuMikuWorld
 	{
 		if (!IO::File::exists(filename.c_str()))
 			return {};
-		IO::File levelFile(filename, "rb");
+		IO::File levelFile(filename, IO::FileMode::ReadBinary);
 		std::vector<uint8_t> bytes = levelFile.readAllBytes();
 		levelFile.close();
 		if (IO::isGzipCompressed(bytes))

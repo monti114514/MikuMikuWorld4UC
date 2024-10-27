@@ -75,8 +75,9 @@ namespace MikuMikuWorld
 		std::string latestVersionString;
 		if (IO::File::exists(updateFlagPath))
 		{
-			auto file = IO::File(updateFlagPath, L"r");
-			auto lastWriteTime = file.getLastWriteTime();
+			auto file = IO::File(updateFlagPath, IO::FileMode::Read);
+			auto lastWriteTime = std::chrono::system_clock::time_point(
+			    std::filesystem::last_write_time(updateFlagPath).time_since_epoch());
 			auto now = std::chrono::system_clock::now();
 			auto diff =
 			    std::chrono::duration_cast<std::chrono::minutes>(now - lastWriteTime).count();
@@ -110,7 +111,7 @@ namespace MikuMikuWorld
 				latestVersionString = tagName.substr(1);
 			}
 
-			auto file = IO::File(updateFlagPath, L"w");
+			auto file = IO::File(updateFlagPath, IO::FileMode::Write);
 			file.write(latestVersionString);
 			file.flush();
 			file.close();

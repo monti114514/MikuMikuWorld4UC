@@ -2,22 +2,22 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <fstream>
 #include <numeric>
 
 namespace IO
 {
+	enum class FileMode : uint8_t
+	{
+		Read,
+		Write,
+		ReadBinary,
+		WriteBinary
+	};
+
 	class File
 	{
-	  private:
-		FILE* stream;
-		std::string filename;
-
-	  public:
-		File(const std::wstring& filename, const wchar_t* mode);
-		File(const std::string& filename, const char* mode);
-		File();
-		~File();
-
+	public:
 		static std::string getFilename(const std::string& filename);
 		static std::string getFileExtension(const std::string& filename);
 		static std::string getFilenameWithoutExtension(const std::string& filename);
@@ -26,21 +26,34 @@ namespace IO
 		static bool exists(const std::string& path);
 		static bool exists(const std::wstring& path);
 
-		void open(const std::wstring& filename, const wchar_t* mode);
-		void open(const std::string& filename, const char* mode);
-		std::chrono::time_point<std::chrono::system_clock> getLastWriteTime() const;
+		void open(const std::string& filename, FileMode mode);
+		void open(const std::wstring& filename, FileMode mode);
 		void close();
 		void flush();
 
 		std::vector<uint8_t> readAllBytes();
-		std::string readLine() const;
-		std::vector<std::string> readAllLines() const;
-		std::string readAllText() const;
+		std::string readLine();
+		std::vector<std::string> readAllLines();
+		std::string readAllText();
 		void write(const std::string& str);
 		void writeLine(const std::string line);
 		void writeAllLines(const std::vector<std::string>& lines);
 		void writeAllBytes(const std::vector<uint8_t>& bytes);
 		bool isEndofFile() const;
+
+		std::string_view getOpenFilename() const { return openFilename; }
+		std::wstring_view getOpenFilenameW() const { return openFilenameW; }
+
+		File(const std::string& filename, FileMode mode);
+		File(const std::wstring& filename, FileMode mode);
+		~File();
+
+	private:
+		std::unique_ptr<std::fstream> stream{};
+		std::string openFilename{};
+		std::wstring openFilenameW{};
+
+		int getStreamMode(FileMode) const;
 	};
 
 	enum class FileDialogResult : uint8_t

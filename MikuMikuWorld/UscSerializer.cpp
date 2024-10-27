@@ -10,7 +10,7 @@ namespace MikuMikuWorld
 	void UscSerializer::serialize(const Score& score, std::string filename)
 	{
 		json usc = scoreToUsc(score);
-		IO::File uscfile(IO::mbToWideStr(filename), L"w");
+		IO::File uscfile(filename, IO::FileMode::Write);
 		uscfile.write(usc.dump(minify ? -1 : 4));
 		uscfile.flush();
 		uscfile.close();
@@ -18,7 +18,7 @@ namespace MikuMikuWorld
 
 	Score UscSerializer::deserialize(std::string filename)
 	{
-		IO::File uscFile(IO::mbToWideStr(filename), L"r");
+		IO::File uscFile(filename, IO::FileMode::Read);
 		json usc = json::parse(uscFile.readAllText());
 		uscFile.close();
 		return uscToScore(usc);
@@ -443,7 +443,7 @@ namespace MikuMikuWorld
 					                 return a["beat"].get<double>() < b["beat"].get<float>();
 				                 });
 
-				bool isCritical;
+				bool isCritical = false;
 				for (const auto& step : connections)
 				{
 					auto type = step["type"].get<std::string>();

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <filesystem>
 #include <chrono>
+#include <sstream>
 
 namespace IO
 {
@@ -20,137 +21,143 @@ namespace IO
 	FileDialogFilter presetFilter{ "Notes Preset", "*.json" };
 	FileDialogFilter allFilter{ "All Files", "*.*" };
 
-	File::File(const std::wstring& filename, const wchar_t* mode)
+	File::File(const std::string& filename, FileMode mode)
 	{
-		stream = NULL;
+		stream = std::make_unique<std::fstream>();
 		open(filename, mode);
 	}
 
-	File::File(const std::string& filename, const char* mode)
+	File::File(const std::wstring& filename, FileMode mode)
 	{
-		stream = NULL;
+		stream = std::make_unique<std::fstream>();
 		open(filename, mode);
 	}
 
-	File::File() { stream = NULL; }
-
-	File::~File() { close(); }
-
-	void File::open(const std::wstring& filename, const wchar_t* mode)
+	File::~File()
 	{
-		if (stream)
-			close();
-
-		stream = _wfopen(filename.c_str(), mode);
-		if (!stream)
-			std::wcerr << L"Failed to open file: " << filename << std::endl;
+		if (stream->is_open())
+			stream->close();
 	}
 
-	void File::open(const std::string& filename, const char* mode)
+	int File::getStreamMode(FileMode mode) const
 	{
-		std::wstring wFileName = mbToWideStr(filename);
-		std::wstring wMode(mode, mode + strlen(mode));
-		open(wFileName, wMode.c_str());
+		switch (mode)
+		{
+		case FileMode::Read:
+			return std::fstream::in;
+		case FileMode::Write:
+			return std::fstream::out;
+		case FileMode::ReadBinary:
+			return std::fstream::in | std::fstream::binary;
+		case FileMode::WriteBinary:
+			return std::fstream::out | std::fstream::binary;
+		default:
+			return 0;
+		}
+	}
+
+	void File::open(const std::string& filename, FileMode mode)
+	{
+		openFilename = filename;
+		open(IO::mbToWideStr(filename), mode);
+	}
+
+	void File::open(const std::wstring& filename, FileMode mode)
+	{
+		openFilenameW = filename;
+		stream->open(filename, getStreamMode(mode));
 	}
 
 	void File::close()
 	{
-		if (stream)
-		{
-			fclose(stream);
-			stream = NULL;
-		}
+		openFilename.clear();
+		openFilenameW.clear();
+		stream->close();
 	}
 
 	void File::flush()
 	{
-		if (stream)
-			fflush(stream);
-	}
-
-	std::chrono::time_point<std::chrono::system_clock> File::getLastWriteTime() const
-	{
-		struct stat fileStat;
-		fstat(_fileno(stream), &fileStat);
-		auto time = fileStat.st_mtime;
-
-		return std::chrono::system_clock::from_time_t(time);
+		stream->flush();
 	}
 
 	std::vector<uint8_t> File::readAllBytes()
 	{
-		fseek(stream, 0, SEEK_END);
-		size_t size = ftell(stream);
-		fseek(stream, 0, SEEK_SET);
+		if (!stream->is_open())
+			return {};
+
+		stream->seekg(0, std::ios_base::end);
+		size_t length = stream->tellg();
+		stream->seekg(0, std::ios_base::beg);
 
 		std::vector<uint8_t> bytes;
-		bytes.resize(size);
-		fread(&bytes[0], sizeof(uint8_t), size, stream);
+		bytes.resize(length);
+		stream->read((char*)bytes.data(), length);
 
 		return bytes;
 	}
 
-	std::string File::readLine() const
+	std::string File::readLine()
 	{
-		std::string line = "";
-		while (!feof(stream))
-		{
-			char c;
-			fread(&c, sizeof(uint8_t), 1, stream);
-			if (feof(stream))
-				break;
+		if (!stream->is_open())
+			return {};
 
-			if (c != '\n')
-				line += c;
-			else
-				break;
-		}
-
+		std::string line{};
+		std::getline(*stream, line);
 		return line;
 	}
 
-	std::vector<std::string> File::readAllLines() const
+	std::vector<std::string> File::readAllLines()
 	{
+		if (!stream->is_open())
+			return {};
+
 		std::vector<std::string> lines;
-		while (!isEndofFile())
+		while (!stream->eof())
 			lines.push_back(readLine());
 
 		return lines;
 	}
 
-	std::string File::readAllText() const
+	std::string File::readAllText()
 	{
-		fseek(stream, 0, SEEK_END);
-		int size = ftell(stream);
-		fseek(stream, 0, SEEK_SET);
+		if (!stream->is_open())
+			return {};
 
-		std::string str(size, '0');
-		fread(str.data(), sizeof(char), size, stream);
-
-		return str;
+		std::stringstream buffer;
+		buffer << stream->rdbuf();
+		return buffer.str();
 	}
 
 	bool File::isEndofFile() const
 	{
-		if (stream)
-			return feof(stream);
-
-		return true;
+		return stream->is_open() ? stream->eof() : true;
 	}
 
-	void File::write(const std::string& str) { fwrite(str.c_str(), str.size(), 1, stream); }
+	void File::write(const std::string& str)
+	{
+		if (stream->is_open())
+		{
+			stream->write(str.c_str(), str.length());
+		}
+	}
 
 	void File::writeLine(const std::string line) { write(line + "\n"); }
 
 	void File::writeAllLines(const std::vector<std::string>& lines)
 	{
-		for (const auto& line : lines)
-			writeLine(line);
+		if (stream->is_open())
+		{
+			for (const auto& line : lines)
+				stream->write(line.c_str(), line.length());
+		}
 	}
 
 	void File::writeAllBytes(const std::vector<uint8_t>& bytes)
 	{
-		fwrite(bytes.data(), sizeof uint8_t, bytes.size(), stream);
+		if (stream->is_open())
+		{
+			stream->write((char*)bytes.data(), bytes.size());
+		}
 	}
 
 	std::string File::getFilename(const std::string& filename)
@@ -260,6 +267,7 @@ namespace IO
 
 		if (type == DialogType::Save)
 		{
+			ofn.Flags |= OFN_HIDEREADONLY;
 			if (GetSaveFileNameW(&ofn))
 			{
 				outputFilename = wideStringToMb(ofn.lpstrFile);
