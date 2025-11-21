@@ -105,7 +105,7 @@ hold, Холд
 hold_step, Тик холда
 flick, Флик
 critical, Критикал
-isdummy, Фейк
+dummy,
 trace, След
 guide, Гайд
 damage, Дамаг
@@ -266,6 +266,7 @@ timeline_critical, Таймлайн - Вставьте критикал
 timeline_trace, Таймлайн - Вставьте след
 timeline_guide, Таймлайн - Вставьте гайд
 timeline_damage, Таймлайн - Вставьте дамаг
+timeline_dummy,
 timeline_bpm, Таймлайн - Вставьте BPM
 timeline_time_signature, Таймлайн - Вставьте отметку времени
 timeline_hi_speed, Таймлайн - Вставьте Hi-Speed

@@ -22,12 +22,13 @@ using nlohmann::json;
 namespace MikuMikuWorld
 {
 	static MultiInputBinding* timelineModeBindings[] = {
-		&config.input.timelineSelect,        &config.input.timelineTap,
-		&config.input.timelineHold,          &config.input.timelineHoldMid,
-		&config.input.timelineFlick,         &config.input.timelineCritical,
-		&config.input.timelineFriction,      &config.input.timelineGuide,
-		&config.input.timelineDamage,        &config.input.timelineBpm,
-		&config.input.timelineTimeSignature, &config.input.timelineHiSpeed,
+		&config.input.timelineSelect,   &config.input.timelineTap,
+		&config.input.timelineHold,     &config.input.timelineHoldMid,
+		&config.input.timelineFlick,    &config.input.timelineCritical,
+		&config.input.timelineFriction, &config.input.timelineGuide,
+		&config.input.timelineDamage,   &config.input.timelineDummy,
+		&config.input.timelineBpm,      &config.input.timelineTimeSignature,
+		&config.input.timelineHiSpeed,
 	};
 
 	constexpr const char* toolbarFlickNames[] = { "none", "default", "left", "right" };
@@ -977,8 +978,7 @@ namespace MikuMikuWorld
 		}
 
 		// sort files by modification date
-		std::sort(deleteFiles.begin(), deleteFiles.end(),
-		          [](const entry& f1, const entry& f2)
+		std::sort(deleteFiles.begin(), deleteFiles.end(), [](const entry& f1, const entry& f2)
 		          { return f1.last_write_time() < f2.last_write_time(); });
 
 		int deleteCount = 0;

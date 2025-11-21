@@ -31,7 +31,7 @@ namespace jsonIO
 				note.flick = mmw::FlickType::Right;
 		}
 
-		note.isDummy = tryGetValue<bool>(data, "isdummy", false);
+		note.dummy = tryGetValue<bool>(data, "dummy", false);
 
 		return note;
 	}
@@ -54,7 +54,7 @@ namespace jsonIO
 			data["flick"] = mmw::flickTypes[(int)note.flick];
 		}
 
-		data["isdummy"] = note.isDummy;
+		data["dummy"] = note.dummy;
 
 		return data;
 	}

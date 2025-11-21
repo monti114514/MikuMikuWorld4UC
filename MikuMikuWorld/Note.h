@@ -70,7 +70,7 @@ namespace MikuMikuWorld
 		float width;
 		bool critical{ false };
 		bool friction{ false };
-		bool isDummy{ false };
+		bool dummy{ false };
 		FlickType flick{ FlickType::None };
 
 		int layer{ 0 };

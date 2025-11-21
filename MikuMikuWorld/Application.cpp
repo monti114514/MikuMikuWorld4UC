@@ -341,6 +341,7 @@ namespace MikuMikuWorld
 				    appDir + IO::formatString("res\\textures\\timeline_guide_%s_%s.png", color,
 				                              std::string(fade).substr(5).c_str()));
 		ResourceManager::loadTexture(texturesDir + "timeline_damage.png");
+		ResourceManager::loadTexture(texturesDir + "timeline_dummy.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_bpm.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_time_signature.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_hi_speed.png");

@@ -1150,6 +1150,7 @@ namespace MikuMikuWorld
 		    currentMode == TimelineMode::InsertFlick ? edit.flickType : FlickType::None;
 		inputNotes.tap.critical = currentMode == TimelineMode::MakeCritical;
 		inputNotes.tap.friction = currentMode == TimelineMode::MakeFriction;
+		inputNotes.tap.dummy = currentMode == TimelineMode::MakeDummy;
 
 		inputNotes.holdStep.lane = lane;
 		inputNotes.holdStep.width = width;
@@ -1348,6 +1349,7 @@ namespace MikuMikuWorld
 		case TimelineMode::MakeCritical:
 		case TimelineMode::MakeFriction:
 		case TimelineMode::InsertFlick:
+		case TimelineMode::MakeDummy:
 			insertNote(context, edit);
 			break;
 
@@ -1792,6 +1794,8 @@ namespace MikuMikuWorld
 					context.toggleFriction();
 					break;
 
+				case TimelineMode::MakeDummy:
+					context.toggleDummy();
 				default:
 					break;
 				}
@@ -2095,7 +2099,7 @@ namespace MikuMikuWorld
 							                         ? tint
 							                         : tint * otherLayerTint,
 							                     z);
-							if (n3.isDummy)
+							if (n3.dummy)
 								drawDummyCrossMark(n3, renderer, tint, offsetTicks, offsetLane);
 
 						}
@@ -2370,7 +2374,7 @@ namespace MikuMikuWorld
 
 		if (note.isFlick())
 			drawFlickArrow(note, renderer, tint, offsetTick, offsetLane);
-		if (note.isDummy)
+		if (note.dummy)
 			drawDummyCrossMark(note, renderer, tint, offsetTick, offsetLane);
 	}
 
@@ -2438,7 +2442,7 @@ namespace MikuMikuWorld
 
 		if (note.isFlick())
 			drawFlickArrow(note, renderer, tint, offsetTick, offsetLane);
-		if (note.isDummy)
+		if (note.dummy)
 			drawDummyCrossMark(note, renderer, tint, offsetTick, offsetLane);
 	}
 
@@ -2988,7 +2992,7 @@ namespace MikuMikuWorld
 		static auto singleNoteSEFunc = [&context, this](const Note& note, float notePlayTime)
 		{
 			bool playSE = true;
-			if (note.getType() == NoteType::Hold && !note.isDummy)
+			if (note.getType() == NoteType::Hold && !note.dummy)
 			{
 				playSE = context.score.holdNotes.at(note.ID).startType == HoldNoteType::Normal;
 			}
@@ -2996,7 +3000,7 @@ namespace MikuMikuWorld
 			{
 				playSE = context.score.holdNotes.at(note.parentID).endType == HoldNoteType::Normal;
 			}
-			else if (note.isDummy)
+			else if (note.dummy)
 			{
 				playSE = false;
 			}

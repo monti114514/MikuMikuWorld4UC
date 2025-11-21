@@ -100,7 +100,7 @@ hold, スライド
 hold_step, スライド中継点
 flick, フリック
 critical, クリティカル
-isdummy, フェイク
+dummy, フェイク
 trace, トレース
 guide, ガイド
 damage, ダメージ
@@ -264,6 +264,7 @@ timeline_critical, タイムライン「クリティカル」
 timeline_trace, タイムライン「トレース」
 timeline_guide, タイムライン「ガイド」
 timeline_damage, タイムライン「ダメージ」
+timeline_dummy, タイムライン「フェイク」
 timeline_bpm, タイムライン「BPM」
 timeline_time_signature, タイムライン「拍子」
 timeline_hi_speed, タイムライン「ハイスピード」

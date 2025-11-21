@@ -95,7 +95,7 @@ hold,Hold
 hold_step,Hold Mid
 flick,Flick
 critical,Critical
-isdummy,Giả
+dummy,Dummy
 trace,Trace
 guide,Guide
 damage,Damage
@@ -246,6 +246,7 @@ timeline_critical,Timeline - Chèn Critical
 timeline_trace,Timeline - Chèn Trace
 timeline_guide,Timeline - Chèn Guide
 timeline_damage,Timeline - Chèn Damage
+timeline_dummy,
 timeline_bpm,Timeline - Chèn BPM
 timeline_time_signature,Timeline - Chèn Time Signature
 timeline_hi_speed,Timeline - Chèn Hi-Speed Change

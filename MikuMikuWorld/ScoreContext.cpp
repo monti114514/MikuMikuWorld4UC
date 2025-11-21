@@ -375,6 +375,24 @@ namespace MikuMikuWorld
 			pushHistory("Change trace notes", prev, score);
 	}
 
+	void ScoreContext::toggleDummy()
+	{
+		if (selectedNotes.empty())
+			return;
+
+		Score prev = score;
+		bool edit = false;
+		for (id_t id : selectedNotes)
+		{
+			Note& note = score.notes.at(id);
+			note.dummy= !note.dummy;
+			edit = true;
+		}
+
+		if (edit)
+			pushHistory("Change dummy note", prev, score);
+	}
+
 	void ScoreContext::deleteSelection()
 	{
 		if (selectedNotes.empty() && selectedHiSpeedChanges.empty())

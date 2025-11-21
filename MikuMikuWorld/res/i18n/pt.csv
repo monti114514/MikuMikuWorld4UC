@@ -100,7 +100,7 @@ hold, Hold
 hold_step, Hold (meio)
 flick, Flick
 critical, Crítico
-isdummy, Falso
+dummy,
 trace, Trace
 guide, Guia
 damage, Dano
@@ -265,6 +265,7 @@ timeline_critical, Editor - Crítico
 timeline_trace, Editor - Trace
 timeline_guide, Editor -  Guia
 timeline_damage, Editor - Dano
+timeline_dummy,
 timeline_bpm, Editor - BPM
 timeline_time_signature, Editor - Indicação de tempo
 timeline_hi_speed, Editor - Hi-speed

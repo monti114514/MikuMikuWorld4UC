@@ -338,12 +338,34 @@ namespace MikuMikuWorld
 							edited = true;
 						}
 
-						if (UI::addCheckboxProperty(getString("isdummy"), note.isDummy))
+						bool selectingAnyDummy = !std::all_of(
+						    context.selectedNotes.begin(), context.selectedNotes.end(),
+						    [&](id_t id)
+						    {
+							    auto& n = context.score.notes.at(id);
+							    if (!n.isHold())
+								    return false;
+							    auto& h = context.score.holdNotes.at(
+							        n.getType() == NoteType::Hold ? n.ID : n.parentID);
+							    switch (n.getType())
+							    {
+							    case NoteType::Hold:
+								    return h.startType == HoldNoteType::Hidden;
+							    case NoteType::HoldEnd:
+								    return h.endType == HoldNoteType::Hidden;
+							    case NoteType::HoldMid:
+								    return h[findHoldStep(h, id)].type == HoldStepType::Hidden;
+							    }
+							    return false;
+						    });
+
+						if (selectingAnyDummy &&
+						    UI::addCheckboxProperty(getString("dummy"), note.dummy))
 						{
 							for (auto& id : context.selectedNotes)
 							{
 								auto& n = context.score.notes.at(id);
-								n.isDummy = note.isDummy;
+								n.dummy = note.dummy;
 							}
 							edited = true;
 						}
@@ -403,16 +425,15 @@ namespace MikuMikuWorld
 					edited = true;
 				}
 
-				if (UI::addCheckboxProperty(getString("isdummy"), note.isDummy))
+				if (UI::addCheckboxProperty(getString("dummy"), note.dummy))
 				{
 					for (auto& id : context.selectedNotes)
 					{
 						auto& n = context.score.notes.at(id);
-						n.isDummy = note.isDummy;
+						n.dummy = note.dummy;
 					}
 					edited = true;
 				}
-
 			}
 
 			UI::endPropertyColumns();
@@ -605,12 +626,10 @@ namespace MikuMikuWorld
 			                                  guideColorsForString, arrayLength(guideColors));
 			UI::addSelectProperty<FadeType>(getString("fade_type"), edit.fadeType, fadeTypes,
 			                                arrayLength(fadeTypes));
-			UI::addSelectProperty<HoldEndType>(getString("hold_start_type"),
-			                                   edit.holdStartType, holdEndTypes,
-			                                   arrayLength(holdEndTypes));
-			UI::addSelectProperty<HoldEndType>(getString("hold_end_type"),
-			                                   edit.holdEndType, holdEndTypes,
-			                                   arrayLength(holdEndTypes));
+			UI::addSelectProperty<HoldEndType>(getString("hold_start_type"), edit.holdStartType,
+			                                   holdEndTypes, arrayLength(holdEndTypes));
+			UI::addSelectProperty<HoldEndType>(getString("hold_end_type"), edit.holdEndType,
+			                                   holdEndTypes, arrayLength(holdEndTypes));
 
 			break;
 		}
@@ -938,10 +957,10 @@ namespace MikuMikuWorld
 		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL, ImGuiWindowFlags_NoResize))
 		{
 			ImGui::Text(APP_NAME "\n"
-				"This application is based on MikuMikuWorld for Chart Cyanvas\n"
-			    "Copyright (c) 2023 Nanashi. (@sevenc-nanashi)\n\n"
-			    "\n\nWhich was based on MikuMikuWorld.\n"
-				"Copyright (C) 2022 Crash5b\n\n");
+			                     "This application is based on MikuMikuWorld for Chart Cyanvas\n"
+			                     "Copyright (c) 2023 Nanashi. (@sevenc-nanashi)\n\n"
+			                     "\n\nWhich was based on MikuMikuWorld.\n"
+			                     "Copyright (C) 2022 Crash5b\n\n");
 			ImGui::Separator();
 
 			float okButtonHeight = ImGui::GetFrameHeight();

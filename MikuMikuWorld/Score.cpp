@@ -88,11 +88,11 @@ namespace MikuMikuWorld
 		// dummynote
 		if (cyanvasVersion >= 6)
 		{
-			note.isDummy = reader->readInt32() != 0;
+			note.dummy = reader->readInt32() != 0;
 		}
 		else
 		{
-			note.isDummy = false;
+			note.dummy = false;
 		}
 		return note;
 	}
@@ -115,7 +115,7 @@ namespace MikuMikuWorld
 		writer->writeInt32(flags);
 
 		// dummynote
-		writer->writeInt32(note.isDummy ? 1 : 0);
+		writer->writeInt32(note.dummy ? 1 : 0);
 	}
 
 	ScoreMetadata readMetadata(BinaryReader* reader, int version, int cyanvasVersion)

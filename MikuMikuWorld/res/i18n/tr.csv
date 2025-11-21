@@ -100,7 +100,7 @@ hold, Basili Tut
 hold_step, Ortasina Basili Tut
 flick, Firlat
 critical, Kritik
-isdummy, Sahte
+dummy,
 trace, Iz
 guide, Kilavuz
 damage, Hasar
@@ -260,6 +260,7 @@ timeline_critical, Zaman Çizelgesi - Kritik Ekle
 timeline_trace, Zaman Çizelgesi - Iz Ekle
 timeline_guide, Zaman Çizelgesi - Kilavuz Ekle
 timeline_damage, Zaman Çizelgesi - Hasar Ekle
+timeline_dummy,
 timeline_bpm, Zaman Çizelgesi - BPM Ekle
 timeline_time_signature, Zaman Çizelgesi - Zaman Imzasi Ekle
 timeline_hi_speed, Zaman Çizelgesi - Hi-Speed Degisikligi Ekle

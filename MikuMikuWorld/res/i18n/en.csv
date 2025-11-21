@@ -100,7 +100,7 @@ hold,Hold
 hold_step,Hold Mid
 flick,Flick
 critical,Critical
-isdummy,Fake
+dummy,Fake
 trace,Trace
 guide,Guide
 damage,Damage
@@ -268,6 +268,7 @@ timeline_critical,Timeline - Insert Critical
 timeline_trace,Timeline - Insert Trace
 timeline_guide,Timeline - Insert Guide
 timeline_damage,Timeline - Insert Damage
+timeline_dummy,Timeline - Insert Fake
 timeline_bpm,Timeline - Insert BPM
 timeline_time_signature,Timeline - Insert Time Signature
 timeline_hi_speed,Timeline - Insert Hi-Speed Change

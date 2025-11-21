@@ -98,7 +98,7 @@ hold,홀드
 hold_step,중간 홀드
 flick,플릭
 critical,황금의
-isdummy,가짜
+dummy,
 trace,트라세우
 guide,가이드
 damage,다메즈
@@ -258,6 +258,7 @@ timeline_critical,황금색 삽입
 timeline_trace,트라세우 삽입
 timeline_guide,가이드 삽입
 timeline_damage,다마주를 삽입하다
+timeline_dummy,
 timeline_bpm,BPM삽입
 timeline_time_signature,박자표 삽입
 timeline_hi_speed,Hi-Speed삽입

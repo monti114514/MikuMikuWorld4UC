@@ -154,6 +154,7 @@ namespace MikuMikuWorld
 		void setLayer(int layer);
 		void toggleCriticals();
 		void toggleFriction();
+		void toggleDummy();
 
 		void deleteSelection();
 		void flipSelection();
@@ -179,7 +180,6 @@ namespace MikuMikuWorld
 
 		void lerpHiSpeeds(int division, EaseType ease);
 
-		// ロングノーツ<->ガイドノーツ変換
 		void convertHoldToGuide(GuideColor color);
 		void convertGuideToHold();
 
