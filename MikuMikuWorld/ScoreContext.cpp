@@ -656,6 +656,8 @@ namespace MikuMikuWorld
 					}
 				}
 
+				hold.dummy = jsonIO::tryGetValue<bool>(entry, "dummy", false);
+
 				pasteData.holds[hold.start.ID] = hold;
 			}
 		}

@@ -101,6 +101,7 @@ hold_step, スライド中継点
 flick, フリック
 critical, クリティカル
 dummy, フェイク
+hold_dummy, 
 trace, トレース
 guide, ガイド
 damage, ダメージ

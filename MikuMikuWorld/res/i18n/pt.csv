@@ -101,6 +101,7 @@ hold_step, Hold (meio)
 flick, Flick
 critical, Crítico
 dummy,
+hold_dummy,
 trace, Trace
 guide, Guia
 damage, Dano

@@ -99,6 +99,7 @@ hold_step,중간 홀드
 flick,플릭
 critical,황금의
 dummy,
+hold_dummy,
 trace,트라세우
 guide,가이드
 damage,다메즈

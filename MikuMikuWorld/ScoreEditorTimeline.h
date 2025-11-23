@@ -176,9 +176,9 @@ namespace MikuMikuWorld
 		void drawWaveform(ScoreContext& context);
 
 		void drawHoldCurve(const Note& n1, const Note& n2, EaseType ease, bool isGuide,
-		                   Renderer* renderer, const Color& tint, const int offsetTick = 0,
-		                   const int offsetLane = 0, const float startAlpha = 1,
-		                   const float endAlpha = 1,
+		                   bool isDummy, Renderer* renderer, const Color& tint,
+		                   const int offsetTick = 0, const int offsetLane = 0,
+		                   const float startAlpha = 1, const float endAlpha = 1,
 		                   const GuideColor guideColor = GuideColor::Green,
 		                   const int selectedLayer = -1);
 		void drawHoldNote(const std::unordered_map<id_t, Note>& notes, const HoldNote& note,
@@ -191,7 +191,7 @@ namespace MikuMikuWorld
 		                    const int offsetTick = 0, const int offsetLane = 0,
 		                    const bool selectedLayer = true);
 		void drawDummyCrossMark(const Note& note, Renderer* renderer, const Color& tint,
-								const int offsetTick = 0, const int offsetLane = 0,
+		                        const int offsetTick = 0, const int offsetLane = 0,
 		                        const bool selectedLayer = true);
 
 		void drawNote(const Note& note, Renderer* renderer, const Color& tint,

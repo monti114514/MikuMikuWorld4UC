@@ -924,23 +924,22 @@ namespace MikuMikuWorld
 		        .timeSignatures[findTimeSignature(currentMeasure, context.score.timeSignatures)];
 		const Tempo& tempo = getTempoAt(context.currentTick, context.score.tempoChanges);
 		id_t hiSpeed = findHighSpeedChange(context.currentTick, context.score.hiSpeedChanges,
-		                                  context.selectedLayer);
+		                                   context.selectedLayer);
 		float speed = (hiSpeed == -1 ? 1.0f : context.score.hiSpeedChanges[hiSpeed].speed);
 
 		std::string rhythmString;
 		if (config.showTickInProperties)
 		{
-			rhythmString = IO::formatString(
-				"  %02d:%02d:%02d  |  %dt  |  %d/%d  |  %g BPM  |  %gx",
-			    (int)time / 60, (int)time % 60, (int)((time - (int)time) * 100), 
-				context.currentTick, ts.numerator, ts.denominator, tempo.bpm, speed);
+			rhythmString = IO::formatString("  %02d:%02d:%02d  |  %dt  |  %d/%d  |  %g BPM  |  %gx",
+			                                (int)time / 60, (int)time % 60,
+			                                (int)((time - (int)time) * 100), context.currentTick,
+			                                ts.numerator, ts.denominator, tempo.bpm, speed);
 		}
 		else
 		{
 			rhythmString = IO::formatString(
-			    "  %02d:%02d:%02d  |  %d/%d  |  %g BPM  |  %gx", 
-				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 100), 
-				ts.numerator, ts.denominator, tempo.bpm, speed);
+			    "  %02d:%02d:%02d  |  %d/%d  |  %g BPM  |  %gx", (int)time / 60, (int)time % 60,
+			    (int)((time - (int)time) * 100), ts.numerator, ts.denominator, tempo.bpm, speed);
 		}
 
 		float _zoom = zoom;
@@ -1241,7 +1240,7 @@ namespace MikuMikuWorld
 		case TimelineMode::InsertLong:
 			if (insertingHold)
 			{
-				drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, edit.easeType, false,
+				drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, edit.easeType, false, false,
 				              renderer, hoverTint);
 				if (edit.holdStartType == HoldEndType::Hidden)
 				{
@@ -1306,7 +1305,7 @@ namespace MikuMikuWorld
 				if (inputNotes.holdStart.tick > inputNotes.holdEnd.tick)
 					std::swap(a1, a2);
 				drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, EaseType::Linear, true,
-				              renderer, noteTint, 1, 0, a1, a2, edit.colorType);
+				              false, renderer, noteTint, 1, 0, a1, a2, edit.colorType);
 				drawOutline(StepDrawData(inputNotes.holdStart, color));
 				drawOutline(StepDrawData(inputNotes.holdEnd, color));
 			}
@@ -1742,7 +1741,8 @@ namespace MikuMikuWorld
 						std::copy(context.selectedNotes.begin(), context.selectedNotes.end(),
 						          sortedSelectedNotes.begin());
 						std::sort(sortedSelectedNotes.begin(), sortedSelectedNotes.end(),
-						          [&context](id_t a, id_t b) {
+						          [&context](id_t a, id_t b)
+						          {
 							          return context.score.notes.at(a).tick <
 							                 context.score.notes.at(b).tick;
 						          });
@@ -1842,10 +1842,11 @@ namespace MikuMikuWorld
 	}
 
 	void ScoreEditorTimeline::drawHoldCurve(const Note& n1, const Note& n2, EaseType ease,
-	                                        bool isGuide, Renderer* renderer, const Color& tint_,
-	                                        const int offsetTick, const int offsetLane,
-	                                        const float startAlpha, const float endAlpha,
-	                                        const GuideColor guideColor, const int selectedLayer)
+	                                        bool isGuide, bool isDummy, Renderer* renderer,
+	                                        const Color& tint_, const int offsetTick,
+	                                        const int offsetLane, const float startAlpha,
+	                                        const float endAlpha, const GuideColor guideColor,
+	                                        const int selectedLayer)
 	{
 		int texIndex{ noteTextures.holdPath };
 		ZIndex zIndex{ ZIndex::HoldLine };
@@ -1865,6 +1866,18 @@ namespace MikuMikuWorld
 			return;
 
 		const Sprite& spr = pathTex.sprites[sprIndex];
+
+		const Texture& dummyTex = ResourceManager::textures[noteTextures.dummyNotes];
+		bool canDrawDummy = isDummy && isArrayIndexInBounds(1, dummyTex.sprites);
+		float sx1, sx2, sy1, sy2;
+		if (canDrawDummy)
+		{
+			const Sprite& crossSprite = dummyTex.sprites[1];
+			sx1 = crossSprite.getX();
+			sx2 = crossSprite.getX() + crossSprite.getWidth();
+			sy1 = crossSprite.getY();
+			sy2 = crossSprite.getY() + crossSprite.getHeight();
+		}
 
 		float startX1 = laneToPosition(n1.lane + offsetLane);
 		float startX2 = laneToPosition(n1.lane + n1.width + offsetLane);
@@ -1910,6 +1923,7 @@ namespace MikuMikuWorld
 			                      n2.layer == selectedLayer ? noteTint : inactiveTint, percent1);
 
 			localTint.a = tint.a * lerp(0.7, 1, lerp(startAlpha, endAlpha, percent1));
+			localTint.a *= isDummy ? 0.9f : 1.f;
 
 			Vector2 p1{ xl1, y1 };
 			Vector2 p2{ xl1 + holdSliceSize, y1 };
@@ -1930,6 +1944,12 @@ namespace MikuMikuWorld
 			p4.x = xr2;
 			renderer->drawQuad(p1, p2, p3, p4, pathTex, right - holdSliceWidth, right, spr.getY(),
 			                   spr.getY() + spr.getHeight(), localTint);
+			if (canDrawDummy)
+			{
+				renderer->drawQuad({ xl1, y1 }, { xr1, y1 }, { xl2, y2 }, { xr2, y2 }, dummyTex,
+				                   sx1, sx2, lerp(sy1, sy2, percent1), lerp(sy1, sy2, percent2),
+				                   localTint);
+			}
 		}
 	}
 
@@ -1937,7 +1957,7 @@ namespace MikuMikuWorld
 	{
 		if (insertingHold)
 		{
-			drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, EaseType::Linear, false,
+			drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, EaseType::Linear, false, false,
 			              renderer, noteTint);
 			drawNote(inputNotes.holdStart, renderer, noteTint);
 			drawNote(inputNotes.holdEnd, renderer, noteTint);
@@ -1995,8 +2015,8 @@ namespace MikuMikuWorld
 						a1 = 1 - p1;
 						a2 = 1 - p2;
 					}
-					drawHoldCurve(n1, n2, ease, note.isGuide(), renderer, tint, offsetTicks,
-					              offsetLane, a1, a2, note.guideColor, selectedLayer);
+					drawHoldCurve(n1, n2, ease, note.isGuide(), note.dummy, renderer, tint,
+					              offsetTicks, offsetLane, a1, a2, note.guideColor, selectedLayer);
 
 					s1 = s2;
 				}
@@ -2023,8 +2043,8 @@ namespace MikuMikuWorld
 
 				const Note& n1 = s1 == -1 ? start : notes.at(note.steps[s1].ID);
 				const EaseType ease = s1 == -1 ? note.start.ease : note.steps[s1].ease;
-				drawHoldCurve(n1, end, ease, note.isGuide(), renderer, tint, offsetTicks,
-				              offsetLane, a1, a2, note.guideColor, selectedLayer);
+				drawHoldCurve(n1, end, ease, note.isGuide(), note.dummy, renderer, tint,
+				              offsetTicks, offsetLane, a1, a2, note.guideColor, selectedLayer);
 			}
 
 			s1 = -1;
@@ -2101,7 +2121,6 @@ namespace MikuMikuWorld
 							                     z);
 							if (n3.dummy)
 								drawDummyCrossMark(n3, renderer, tint, offsetTicks, offsetLane);
-
 						}
 					}
 				}
@@ -2129,8 +2148,8 @@ namespace MikuMikuWorld
 				a1 = 1;
 				a2 = 0;
 			}
-			drawHoldCurve(start, end, note.start.ease, note.isGuide(), renderer, tint, offsetTicks,
-			              offsetLane, a1, a2, note.guideColor, selectedLayer);
+			drawHoldCurve(start, end, note.start.ease, note.isGuide(), note.dummy, renderer, tint,
+			              offsetTicks, offsetLane, a1, a2, note.guideColor, selectedLayer);
 		}
 
 		auto inactiveTint = tint * otherLayerTint;
@@ -2276,8 +2295,8 @@ namespace MikuMikuWorld
 		                     arrowS.getY(), arrowS.getY() + arrowS.getHeight(), tint, 2);
 	}
 	void ScoreEditorTimeline::drawDummyCrossMark(const Note& note, Renderer* renderer,
-	                                         const Color& tint, const int offsetTick,
-	                                         const int offsetLane, const bool selectedLayer)
+	                                             const Color& tint, const int offsetTick,
+	                                             const int offsetLane, const bool selectedLayer)
 	{
 		if (noteTextures.dummyNotes == -1)
 			return;
@@ -2291,11 +2310,13 @@ namespace MikuMikuWorld
 
 		Vector2 pos{ 0, 0 };
 		const float x1 = laneToPosition(note.lane + offsetLane);
-		const float x2 = pos.x + laneToPosition(note.lane + note.width + offsetLane);
+		const float x2 = laneToPosition(note.lane + note.width + offsetLane);
 		pos.x = midpoint(x1, x2);
-		pos.y += getNoteYPosFromTick(note.tick + offsetTick);
+		pos.y = getNoteYPosFromTick(note.tick + offsetTick);
 
-		Vector2 size{ laneWidth, laneWidth };
+		Vector2 size{ std::max(std::min(laneWidth * note.width / 2, laneWidth * 3.f),
+			                   laneWidth * 0.5f),
+			          notesHeight * 2 / 3 };
 
 		const int z = (selectedLayer ? (int)ZIndex::zCount : 0) + (int)ZIndex::Note + 1;
 
@@ -2304,9 +2325,8 @@ namespace MikuMikuWorld
 		float sy1 = crossSprite.getY();
 		float sy2 = crossSprite.getY() + crossSprite.getHeight();
 
-
-		renderer->drawSprite(pos, 0.0f, size, AnchorType::MiddleCenter, tex, sx1, sx2,
-		                     sy1, sy2, tint, z);
+		renderer->drawSprite(pos, 0.0f, size, AnchorType::MiddleCenter, tex, sx1, sx2, sy1, sy2,
+		                     tint, z);
 	}
 	void ScoreEditorTimeline::drawNote(const Note& note, Renderer* renderer, const Color& tint,
 	                                   const int offsetTick, const int offsetLane,
@@ -2992,7 +3012,7 @@ namespace MikuMikuWorld
 		static auto singleNoteSEFunc = [&context, this](const Note& note, float notePlayTime)
 		{
 			bool playSE = true;
-			if (note.getType() == NoteType::Hold && !note.dummy)
+			if (note.getType() == NoteType::Hold)
 			{
 				playSE = context.score.holdNotes.at(note.ID).startType == HoldNoteType::Normal;
 			}
@@ -3000,7 +3020,7 @@ namespace MikuMikuWorld
 			{
 				playSE = context.score.holdNotes.at(note.parentID).endType == HoldNoteType::Normal;
 			}
-			else if (note.dummy)
+			if (note.dummy)
 			{
 				playSE = false;
 			}
@@ -3019,7 +3039,10 @@ namespace MikuMikuWorld
 
 		static auto holdNoteSEFunc = [&context, this](const Note& note, float startTime)
 		{
-			int endTick = context.score.notes.at(context.score.holdNotes.at(note.ID).end).tick;
+			HoldNote& hold = context.score.holdNotes.at(note.ID);
+			if (hold.dummy)
+				return;
+			int endTick = context.score.notes.at(hold.end).tick;
 			float endTime = accumulateDuration(endTick, TICKS_PER_BEAT, context.score.tempoChanges);
 
 			float adjustedEndTime = endTime - playStartTime + audioOffsetCorrection;

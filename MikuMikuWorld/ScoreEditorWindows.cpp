@@ -563,6 +563,11 @@ namespace MikuMikuWorld
 								}
 								edited = true;
 							}
+
+							if (UI::addCheckboxProperty(getString("hold_dummy"), hold.dummy))
+							{
+								edited = true;
+							}
 						}
 					}
 				}

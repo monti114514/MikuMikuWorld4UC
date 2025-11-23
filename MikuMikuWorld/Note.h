@@ -111,6 +111,8 @@ namespace MikuMikuWorld
 		FadeType fadeType{ FadeType::Out };
 		GuideColor guideColor{ GuideColor::Green };
 
+		bool dummy;
+
 		constexpr bool isGuide() const
 		{
 			return startType == HoldNoteType::Guide || endType == HoldNoteType::Guide;

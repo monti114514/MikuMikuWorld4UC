@@ -106,6 +106,7 @@ hold_step, Тик холда
 flick, Флик
 critical, Критикал
 dummy,
+hold_dummy,
 trace, След
 guide, Гайд
 damage, Дамаг
