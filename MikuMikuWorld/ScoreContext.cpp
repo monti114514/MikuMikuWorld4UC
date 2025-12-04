@@ -699,10 +699,11 @@ namespace MikuMikuWorld
 		if (pasteData.pasting)
 		{
 			// find the lane in which the cursor is in the middle of pasted notes
-			float left = MAX_LANE + score.metadata.laneExtension;
-			float right = MIN_LANE - score.metadata.laneExtension;
-			float leftmostLane = MAX_LANE + score.metadata.laneExtension;
-			float rightmostLane = MIN_LANE - score.metadata.laneExtension;
+			float extend = workingData.laneExtension;
+			float left = MAX_LANE + extend;
+			float right = MIN_LANE - extend;
+			float leftmostLane = MAX_LANE + extend;
+			float rightmostLane = MIN_LANE - extend;
 			for (const auto& [_, note] : pasteData.notes)
 			{
 				leftmostLane = std::min((float)leftmostLane, note.lane);
@@ -711,8 +712,8 @@ namespace MikuMikuWorld
 				right = std::max((float)right, note.lane);
 			}
 
-			pasteData.minLaneOffset = MIN_LANE - score.metadata.laneExtension - leftmostLane;
-			pasteData.maxLaneOffset = MAX_LANE + score.metadata.laneExtension - rightmostLane;
+			pasteData.minLaneOffset = MIN_LANE - extend - leftmostLane;
+			pasteData.maxLaneOffset = MAX_LANE + extend - rightmostLane;
 			pasteData.midLane = (left + right) / 2;
 		}
 	}
@@ -1137,13 +1138,13 @@ namespace MikuMikuWorld
 		pushHistory("Split hold", prev, score);
 	}
 
-	void ScoreContext::repeatMidsInSelection(ScoreContext& context)
+	void ScoreContext::repeatMidsInSelection()
 	{
 
 		int selectedTickNum = 0;
-		for (const auto& noteId : context.selectedNotes)
+		for (const auto& noteId : selectedNotes)
 		{
-			auto& note = context.score.notes.at(noteId);
+			auto& note = score.notes.at(noteId);
 			if (note.hasEase())
 			{
 				selectedTickNum += 1;
@@ -1175,9 +1176,9 @@ namespace MikuMikuWorld
 
 		std::vector<int> sortedSelection;
 
-		for (const auto& noteId : context.selectedNotes)
+		for (const auto& noteId : selectedNotes)
 		{
-			auto& note = context.score.notes.at(noteId);
+			auto& note = score.notes.at(noteId);
 			if (note.hasEase())
 			{
 				sortedSelection.push_back(noteId);
@@ -1215,8 +1216,8 @@ namespace MikuMikuWorld
 			hold.steps[endPos].ease = hold.steps[startPos].ease;
 		}
 
-		float minLane = MIN_LANE - context.score.metadata.laneExtension;
-		float maxLane = MAX_LANE + context.score.metadata.laneExtension + 1;
+		float minLane = MIN_LANE - workingData.laneExtension;
+		float maxLane = MAX_LANE + workingData.laneExtension + 1;
 
 		for (int j = 1; j < sortedSelection.size(); j++)
 		{

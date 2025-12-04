@@ -11,8 +11,7 @@ open_recent,Mở tệp gần đây
 clear,Xóa
 save,Lưu
 save_as,Lưu như
-export_sus,Xuất SUS
-export_usc,Xuất USC
+export_score,Xuất score
 exit,Thoát
 edit,Sửa
 undo,Hoàn tác
@@ -43,13 +42,20 @@ discard_changes,Hủy bỏ thay đổi
 update_available,Phiên bản mới đang có sẵn!
 update_available_description,%s đang có sẵn. Bạn có muốn mở ở trình duyệt không?
 score_file,Score file
+export_successful,
+unknown_file_format,
+open_as_file_format,
+export_as_file_format,
 error,Lỗi
 error_load_score_file,Một lỗi đã xuất hiện khi đang đọc score file
+error_save_score_file,
 error_load_music_file,Không thể mở file nhạc
+score_partially_missing,
 cancel,Hủy
 general,Chung
 key_config,Key Config
 language,Ngôn ngữ
+minify, 
 auto,Tự động
 auto_save,Tự động lưu
 auto_save_enable,Tự động lưu được bật

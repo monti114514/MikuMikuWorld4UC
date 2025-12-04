@@ -14,9 +14,7 @@ open_recent, Abrir reciente
 clear, Vacío
 save, Guardar
 save_as, Guardar como
-export_sus, Exportar .sus
-export_usc, Exportar .usc
-export, Exportar
+export_score, 
 exit, Salir
 edit, Editar
 undo, Deshacer
@@ -47,13 +45,20 @@ discard_changes, Descartar cambios
 update_available, Hay una actualización disponible!
 update_available_description, La versión %s está disponible. ¿Quieres abrirla en el navegador?
 score_file, Archivo de música
+export_successful,
+unknown_file_format,
+open_as_file_format,
+export_as_file_format,
 error, Error
 error_load_score_file, Se produjo un error al cargar la partitura.
+error_save_score_file,
 error_load_music_file, No se pudo cargar el archivo de música.
+score_partially_missing,
 cancel, Cancelar
 general, General
 key_config, Configuración de teclas
 language, Idioma
+minify, 
 auto, Automático
 auto_save, Autoguardado
 auto_save_enable, Autoguardado habilitado

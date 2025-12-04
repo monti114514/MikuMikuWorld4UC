@@ -7,6 +7,18 @@ namespace MikuMikuWorld
 		return start + percentage * (end - start);
 	}
 
+	float unlerp(float start, float end, float value) { return (value - start) / (end - start); }
+
+	double lerpD(double start, double end, double percentage)
+	{
+		return start + percentage * (end - start);
+	}
+
+	double unlerpD(double start, double end, double value)
+	{
+		return (value - start) / (end - start);
+	}
+
 	float easeIn(float start, float end, float ratio) { return lerp(start, end, ratio * ratio); }
 
 	float easeOut(float start, float end, float ratio)

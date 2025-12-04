@@ -39,6 +39,7 @@ namespace MikuMikuWorld
 		return flick != FlickType::None && type != NoteType::Hold && type != NoteType::HoldMid;
 	}
 
+	// NOTE: Keep this backward compat for score serialization
 	bool Note::hasEase() const { return type == NoteType::Hold || type == NoteType::HoldMid; }
 
 	bool Note::canFlick() const { return type == NoteType::Tap || type == NoteType::HoldEnd; }

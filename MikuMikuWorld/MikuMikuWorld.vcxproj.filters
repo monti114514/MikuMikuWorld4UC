@@ -120,9 +120,6 @@
     <ClCompile Include="SusExporter.cpp">
       <Filter>Score\SUS</Filter>
     </ClCompile>
-    <ClCompile Include="ScoreConverter.cpp">
-      <Filter>Score</Filter>
-    </ClCompile>
     <ClCompile Include="ScoreEditorWindows.cpp">
       <Filter>ScoreEditor</Filter>
     </ClCompile>
@@ -146,6 +143,25 @@
     </ClCompile>
     <ClCompile Include="IO.cpp">
       <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="SonolusSerializer.cpp">
+      <Filter>Score\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="Sonolus.cpp" />
+    <ClCompile Include="ScoreSerializer.cpp">
+      <Filter>Score\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="ScoreSerializeWindow.cpp">
+      <Filter>Score\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeScoreSerializer.cpp">
+      <Filter>Score\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="SusSerializer.cpp">
+      <Filter>Score\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="UscSerializer.cpp">
+      <Filter>Score\Serialization</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -293,9 +309,6 @@
     <ClInclude Include="SusExporter.h">
       <Filter>Score\SUS</Filter>
     </ClInclude>
-    <ClInclude Include="ScoreConverter.h">
-      <Filter>Score</Filter>
-    </ClInclude>
     <ClInclude Include="ScoreEditorWindows.h">
       <Filter>ScoreEditor</Filter>
     </ClInclude>
@@ -325,6 +338,25 @@
     </ClInclude>
     <ClInclude Include="Audio\Waveform.h">
       <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SonolusSerializer.h">
+      <Filter>Score\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="Sonolus.h" />
+    <ClInclude Include="ScoreSerializer.h">
+      <Filter>Score\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="ScoreSerializeWindow.h">
+      <Filter>Score\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeScoreSerializer.h">
+      <Filter>Score\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="SusSerializer.h">
+      <Filter>Score\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="UscSerializer.h">
+      <Filter>Score\Serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -381,6 +413,9 @@
     </Filter>
     <Filter Include="ScoreEditor">
       <UniqueIdentifier>{9b7e5692-fc35-4f4c-9b06-172b56eed59d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Score\Serialization">
+      <UniqueIdentifier>{30a99260-30fa-4a6e-a1a6-e51bb946a0e0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

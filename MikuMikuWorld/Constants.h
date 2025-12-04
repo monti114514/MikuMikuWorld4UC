@@ -33,6 +33,8 @@ namespace MikuMikuWorld
 
 	constexpr const char* SUS_EXTENSION = ".sus";
 	constexpr const char* USC_EXTENSION = ".usc";
+	constexpr const char* JSON_EXTENSION = ".json";
+	constexpr const char* GZ_JSON_EXTENSION = ".json.gz";
 	constexpr const char* MMWS_EXTENSION = ".mmws";
 	constexpr const char* CC_MMWS_EXTENSION = ".ccmmws";
 	constexpr const char* UC_MMWS_EXTENSION = ".unchmmws";

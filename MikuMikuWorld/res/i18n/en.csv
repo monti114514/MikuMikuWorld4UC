@@ -12,8 +12,7 @@ open_recent,Open Recent
 clear,Clear
 save,Save
 save_as,Save As
-export_sus,Export SUS
-export_usc,Export USC
+export_score,Export Score
 exit,Exit
 edit,Edit
 undo,Undo
@@ -45,13 +44,19 @@ update_available,New version available!
 update_available_description,%s is available. Do you want to open in the browser?
 score_file,Score file
 error,Error
+export_successful,The export completed successfully
+unknown_file_format,Unknown file format
+open_as_file_format,Do you want to open it as...
+export_as_file_format,Do you want to export it as...
 error_load_score_file,An error occurred while reading the score file
+error_save_score_file,An error occurred while saving the score file
 error_load_music_file,Cannot open music file
+score_partially_missing,Some of part of the score the might be missing!
 cancel,Cancel
 general,General
 key_config,Key Config
 language,Language
-minify_usc,Minify USC
+minify,Minify
 show_sus_export,Enable SUS Export
 auto,Auto
 auto_save,Auto Save

@@ -11,6 +11,15 @@
 
 namespace IO
 {
+	FileDialogFilter mmwsFilter{ "MikuMikuWorld Score", "*.unchmmws;*.ccmmws;*.mmws" };
+	FileDialogFilter susFilter{ "Sliding Universal Score", "*.sus" };
+	FileDialogFilter uscFilter{ "Universal Sekai Chart", "*.usc" };
+	FileDialogFilter lvlDatFilter{ "Sonolus Level Data", "*.json.gz;*.json" };
+	FileDialogFilter imageFilter{ "Image Files", "*.jpg;*.jpeg;*.png" };
+	FileDialogFilter audioFilter{ "Audio Files", "*.mp3;*.wav;*.flac;*.ogg" };
+	FileDialogFilter presetFilter{ "Notes Preset", "*.json" };
+	FileDialogFilter allFilter{ "All Files", "*.*" };
+
 	File::File(const std::wstring& filename, const wchar_t* mode)
 	{
 		stream = NULL;
@@ -139,6 +148,11 @@ namespace IO
 			writeLine(line);
 	}
 
+	void File::writeAllBytes(const std::vector<uint8_t>& bytes)
+	{
+		fwrite(bytes.data(), sizeof uint8_t, bytes.size(), stream);
+	}
+
 	std::string File::getFilename(const std::string& filename)
 	{
 		size_t start = filename.find_last_of("\\/");
@@ -193,10 +207,7 @@ namespace IO
 		return std::filesystem::exists(wPath);
 	}
 
-	bool File::exists(const std::wstring& path)
-	{
-		return std::filesystem::exists(path);
-	}
+	bool File::exists(const std::wstring& path) { return std::filesystem::exists(path); }
 
 	FileDialogResult FileDialog::showFileDialog(DialogType type, DialogSelectType selectType)
 	{

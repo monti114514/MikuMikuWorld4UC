@@ -38,12 +38,14 @@ namespace MikuMikuWorld
 		std::string filename{};
 		std::string musicFilename{};
 		float musicOffset{};
+		int laneExtension{};
 		Jacket jacket{};
 
 		EditorScoreData() {}
 		EditorScoreData(const ScoreMetadata& metadata, const std::string& filename)
 		    : title{ metadata.title }, designer{ metadata.author }, artist{ metadata.artist },
-		      musicFilename{ metadata.musicFile }, musicOffset{ metadata.musicOffset }
+		      musicFilename{ metadata.musicFile }, musicOffset{ metadata.musicOffset },
+		      laneExtension{ metadata.laneExtension }
 		{
 			this->filename = filename;
 			jacket.load(metadata.jacketFile);
@@ -51,7 +53,7 @@ namespace MikuMikuWorld
 
 		ScoreMetadata toScoreMetadata() const
 		{
-			return { title, artist, designer, musicFilename, jacket.getFilename(), musicOffset };
+			return { title, artist, designer, musicFilename, jacket.getFilename(), musicOffset, laneExtension };
 		}
 	};
 
@@ -170,7 +172,7 @@ namespace MikuMikuWorld
 
 		void connectHoldsInSelection();
 		void splitHoldInSelection();
-		void repeatMidsInSelection(ScoreContext& context);
+		void repeatMidsInSelection();
 		/**
 		 * @brief Convert normal holds or guide notes within selection into traces
 		 * @param division Current division. Used to determine the ticks between two trace notes

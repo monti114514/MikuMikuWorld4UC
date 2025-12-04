@@ -40,9 +40,7 @@ namespace MikuMikuWorld
 		MultiInputBinding save = { "save", { ImGuiKey_S, ImGuiModFlags_Ctrl } };
 		MultiInputBinding saveAs = { "save_as",
 			                         { ImGuiKey_S, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift } };
-		MultiInputBinding exportSus = { "export_sus",
-			                            { ImGuiKey_E, ImGuiModFlags_Shift | ImGuiModFlags_Ctrl } };
-		MultiInputBinding exportUsc = { "export_usc", { ImGuiKey_E, ImGuiModFlags_Ctrl } };
+		MultiInputBinding exportScore = { "export_score", { ImGuiKey_E, ImGuiModFlags_Ctrl } };
 		MultiInputBinding selectAll = { "select_all", { ImGuiKey_A, ImGuiModFlags_Ctrl } };
 		MultiInputBinding undo = { "undo", { ImGuiKey_Z, ImGuiModFlags_Ctrl } };
 		MultiInputBinding redo = { "redo", { ImGuiKey_Y, ImGuiModFlags_Ctrl } };
@@ -98,8 +96,8 @@ namespace MikuMikuWorld
 		float zoom;
 
 		// settings
-		bool minifyUsc;
-		bool showSusExport;
+		bool minifyOutput;
+		int defaultExportFormat;
 		int timelineWidth;
 		int notesHeight;
 		bool matchNotesSizeToTimeline;
@@ -143,8 +141,7 @@ namespace MikuMikuWorld
 		&config.input.open,
 		&config.input.save,
 		&config.input.saveAs,
-		&config.input.exportSus,
-		&config.input.exportUsc,
+		&config.input.exportScore,
 		&config.input.undo,
 		&config.input.redo,
 

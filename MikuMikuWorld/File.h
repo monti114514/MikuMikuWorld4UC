@@ -2,12 +2,10 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <numeric>
 
 namespace IO
 {
-	constexpr const char* allFilesName{ "All Files" };
-	constexpr const char* allFilesFilter{ "*.*" };
-
 	class File
 	{
 	  private:
@@ -41,6 +39,7 @@ namespace IO
 		void write(const std::string& str);
 		void writeLine(const std::string line);
 		void writeAllLines(const std::vector<std::string>& lines);
+		void writeAllBytes(const std::vector<uint8_t>& bytes);
 		bool isEndofFile() const;
 	};
 
@@ -86,4 +85,30 @@ namespace IO
 		FileDialogResult openFile();
 		FileDialogResult saveFile();
 	};
+
+	inline FileDialogFilter combineFilters(const std::string& filterName,
+	                                       const std::initializer_list<FileDialogFilter>& filters)
+	{
+		std::string filterType;
+		if (!filters.size())
+			return { filterName, "*.*" };
+		filterType.reserve(std::accumulate(filters.begin(), filters.end(), size_t(0),
+		                                   [](size_t sz, const FileDialogFilter& filter)
+		                                   { return sz + filter.filterType.size() + 1; }) -
+		                   1);
+		auto begin = filters.begin(), end = filters.end();
+		filterType += (begin++)->filterType;
+		for (; begin != end; ++begin)
+			filterType.append(";").append(begin->filterType);
+		return { filterName, filterType };
+	}
+
+	extern FileDialogFilter mmwsFilter;
+	extern FileDialogFilter susFilter;
+	extern FileDialogFilter uscFilter;
+	extern FileDialogFilter lvlDatFilter;
+	extern FileDialogFilter imageFilter;
+	extern FileDialogFilter audioFilter;
+	extern FileDialogFilter presetFilter;
+	extern FileDialogFilter allFilter;
 }

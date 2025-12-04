@@ -76,7 +76,27 @@ namespace MikuMikuWorld
 		return v;
 	}
 
+	template <typename FloatType = double> static auto roundOff(double value, int precision = 7)
+	{
+		FloatType dvalue = value;
+		double digits = std::pow(10, precision);
+		return std::round(dvalue * digits) / digits;
+	}
+
+	template <typename FloatType>
+	static bool isClose(FloatType val, FloatType tgr,
+	             FloatType epsilon = std::numeric_limits<FloatType>::epsilon())
+	{
+		if (val == tgr)
+			return true;
+		FloatType tolerance = epsilon * std::max(std::fabs(val), std::fabs(tgr));
+		return std::fabs(val - tgr) <= std::max(epsilon, tolerance);
+	}
+
 	float lerp(float start, float end, float ratio);
+	float unlerp(float start, float end, float value);
+	double lerpD(double start, double end, double ratio);
+	double unlerpD(double start, double end, double value);
 	float easeIn(float start, float end, float ratio);
 	float easeOut(float start, float end, float ratio);
 	float easeInOut(float start, float end, float ratio);

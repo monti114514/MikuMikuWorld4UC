@@ -12,8 +12,7 @@ open_recent,최근열어
 clear,없애
 save,저장
 save_as,다른이름으로저장
-export_sus,SUS로내보내기
-export_usc,USC로내보내기
+export_score,
 exit,퇴거
 edit,교정
 undo,실행취소
@@ -44,12 +43,19 @@ discard_changes,버리
 update_available,업데이트가 있습니다!
 update_available_description,%s 사용할 수 있습니다. 브라우저에서 열까요?
 score_file,점수 파일
+export_successful,
+unknown_file_format,
+open_as_file_format,
+export_as_file_format,
 error,오류
 error_load_score_file,악보 파일을 읽는 중 오류가 발생했습니다.
+error_save_score_file,
 error_load_music_file,음악 파일을 열 수 없습니다.
+score_partially_missing,
 cancel,취소
 general,일반
 key_config,키 구성
+minify, 
 language,언어
 auto,자동
 auto_save,자동 저장

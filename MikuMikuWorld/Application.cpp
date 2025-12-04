@@ -150,8 +150,7 @@ namespace MikuMikuWorld
 			std::string extension = IO::File::getFileExtension(*it);
 			std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
 
-			if (extension == SUS_EXTENSION || extension == USC_EXTENSION ||
-			    extension == MMWS_EXTENSION || extension == CC_MMWS_EXTENSION)
+			if (ScoreSerializeController::isValidFormat(ScoreSerializeController::toSerializeFormat(*it)))
 				scoreFile = *it;
 			else if (Audio::isSupportedFileFormat(extension))
 				musicFile = *it;
