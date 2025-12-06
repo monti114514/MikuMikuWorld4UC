@@ -2,9 +2,10 @@
 # key, value
 
 language_name, Tiếng Việt
+translator,N/A
 
 # menu bar
-file,File
+file,Tệp
 new,Mới
 open,Mở
 open_recent,Mở tệp gần đây
@@ -25,13 +26,13 @@ show_fps,Hiện FPS
 debug,Debug
 create_auto_save,Tạo tự động sao lưu
 help,Trợ giúp
-about,About
+about,Giới thiệu
 
 # dialogs
-file_not_found,File không được tìm thấy
-file_not_found_msg1,File
+file_not_found,Tệp không được tìm thấy
+file_not_found_msg1,Tệp
 file_not_found_msg2,không được tìm thấy
-remove_recent_file_not_found,Bạn có muốn xóa khỏi danh sách file gần đây không?
+remove_recent_file_not_found,Bạn có muốn xóa khỏi danh sách tệp gần đây không?
 yes,Có
 no,Không
 unsaved_changes,Thay đổi chưa được lưu
@@ -41,21 +42,21 @@ save_changes,Lưu thay đổi
 discard_changes,Hủy bỏ thay đổi
 update_available,Phiên bản mới đang có sẵn!
 update_available_description,%s đang có sẵn. Bạn có muốn mở ở trình duyệt không?
-score_file,Score file
-export_successful,
-unknown_file_format,
-open_as_file_format,
-export_as_file_format,
+score_file,Tệp score
+export_successful,Xuất thành công
+unknown_file_format,Định dạng tệp không xác định
+open_as_file_format,Bạn muốn mở tệp dưới dạng...
+export_as_file_format,Chọn định dạng để xuất...
 error,Lỗi
-error_load_score_file,Một lỗi đã xuất hiện khi đang đọc score file
-error_save_score_file,
+error_load_score_file,Đã có lỗi xuất hiện khi đang đọc tệp score
+error_save_score_file,Đã có lỗi xuất hiện khi đang lưu tệp score
 error_load_music_file,Không thể mở file nhạc
-score_partially_missing,
+score_partially_missing,Một số phần của score có thể bị thiếu!
 cancel,Hủy
 general,Chung
-key_config,Key Config
+key_config,Phím tắt
 language,Ngôn ngữ
-minify, 
+minify,Thu gọn
 auto,Tự động
 auto_save,Tự động lưu
 auto_save_enable,Tự động lưu được bật
@@ -70,56 +71,57 @@ base_theme,Cơ bản
 theme_light,Sáng
 theme_dark,Tối
 custom_color,Màu tự chọn
-timeline,Timeline
-match_notes_size_to_timeline,Kết hợp kích thước note với độ rộng của timeline
+timeline,Dòng thời gian
+match_notes_size_to_timeline,Điểu chỉnh kích thước note theo độ rộng của dòng thời gian
 lane_width,Độ rộng lane
 notes_height,Độ cao của note
 scrolling,Cuộn
 scroll_speed_normal,Tốc độ cuộn
 scroll_speed_shift,Tốc độ cuộn (Shift)
-use_smooth_scroll,Sử dụng Smooth Scrolling
-smooth_scroll_time,Thời gian Smooth Scrolling
+use_smooth_scroll,Sử dụng cuộn mượt
+smooth_scroll_time,Thời gian cuộn mượt
 return_to_last_tick,Quay lại tick cuối khi dừng
-cursor_auto_scroll,Cursor Auto Scroll
-cursor_auto_scroll_amount,Cursor Auto Scroll Percentage From Timeline
-background,Hình nền
+cursor_auto_scroll,Tự động cuộn theo con trỏ
+cursor_auto_scroll_amount,Phần trăm tự động cuộn theo con trỏ trên dòng thời gian
+background,Nền
 background_image,Ảnh hình nền
-draw_background,Vẽ ảnh hình nền
+draw_background,Hiện ảnh hình nền
 background_brightnes,Độ sáng hình nền
-lanes_opacity,Độ mờ đục của lane
+lanes_opacity,Độ trong suốt của lane
 video,Video
-notes_se,Notes SE
+notes_se,Notes hiệu ứng âm thanh
+show_tick_in_properties,Hiện thuộc tính Tick trên thanh thông tin
 
 # score editor
 options,Cài đặt
 chart_properties,Thông tin Chart
 note_properties,Thông tin Note
-notes_timeline,Notes Timeline
+notes_timeline,Dòng thời gian Notes
 select,Chọn
 tap,Tap
 hold,Hold
 hold_step,Hold Mid
 flick,Flick
 critical,Critical
-dummy,
-hold_dummy,
+dummy,Fake
+hold_dummy,Fake Hold
 trace,Trace
 guide,Guide
 damage,Damage
 bpm,BPM
-time_signature,Time Signature
+time_signature,Số chỉ nhịp
 none,Không
-default,Theo con trỏ chuột
+default,Thẳng
 left,Trái
 right,Phải
 normal,Bình thường
-hidden,Hidden
-skip,Skip
-linear,Linear
-ease_in,Ease In
-ease_out,Ease Out
-ease_in_out,Ease In Out
-ease_out_in,Ease Out In
+hidden,Không
+skip,Gắn theo
+linear,Thẳng
+ease_in,Cong vào
+ease_out,Cong ra
+ease_in_out,Cong vào ra
+ease_out_in,Cong ra vào
 delete,Xóa
 copy,Sao chép
 cut,Cắt
@@ -131,15 +133,21 @@ flip,Lật ngược
 note_width,Độ rộng Note
 shrink_down,Co xuống
 shrink_up,Co lên
+compress_selection,Nén lựa chọn
 connect_holds,Nối Holds
 split_hold,Tách Hold
-lerp_hispeeds,Thêm Hi-Speeds
 repeat_hold_mids,Lặp Hold Mids
+hold_to_traces,Chuyển Hold thành Trace
+add_traces_for_hold,Thêm Trace vào Hold
+convert_hold_to_traces,Chuyển đổi Hold
+lerp_hispeeds,Ước tính Hi-Speeds
 step_type,Loại Step
 ease_type,Loại Ease
 flick_type,Loại Flick
 hold_type,Loại Hold
 fade_type,Loại Fade
+hold_start_type,Loại Hold Start
+hold_end_type,Loại Hold End
 metadata,Metadata
 title,Tiêu đề
 designer,Designer
@@ -153,10 +161,12 @@ volume_master,Âm thanh tổng
 volume_bgm,Nhạc
 volume_se,Hiệu ứng
 statistics,Thông số
+hispeeds,Hi-Speeds
 taps,Taps
 flicks,Flicks
 holds,Holds
-steps,Steps
+steps,Holds Mids
+guides,Guides
 traces,Traces
 total,Tổng
 combo,Combo
@@ -165,6 +175,10 @@ division,%d Division
 division_affix,%d Division
 custom,Tự chỉnh 
 custom_division,Tự chỉnh Division
+snap_mode,Căn chỉnh
+snap_mode_relative,Dính Tương đối
+snap_mode_absolute,Dính Tuyệt đối
+snap_mode_individual_absolute,Dính Tuyệt đối Riêng
 zoom,Zoom
 show_step_outlines,Hiện Step Outlines
 draw_waveform,Hiện Waveform
@@ -183,7 +197,7 @@ fade_none,No Fade
 fade_in,Fade In
 fade_out,Fade Out
 guide_color,Màu Guide
-guide_neutral,Trung tính (Trắng)
+guide_neutral,Trắng
 guide_red,Đỏ
 guide_blue,Xanh nước biển
 guide_green,Xanh lá
@@ -205,6 +219,9 @@ note_properties_hi_speed,Thông tin hi-speed
 note_properties_hold_note,Thông tin Hold Notes
 note_properties_guide,Thông tin Guide
 note_properties_not_selected,Không có note hoặc hi-speed nào được chọn
+note_properties_many_hold_notes,Đang lựa chọn nhiều hơn một Hold note
+translated_by,Dịch bởi: %s
+zoom_tooltip,Ctrl+Chuột Trái để chỉnh sửa
 
 # preset manager
 presets,Presets
@@ -226,6 +243,8 @@ layer_up,Chuyển lên trên
 layer_down,Chuyển xuống dưới
 layer_merge,Hợp lại Layer
 layer_delete,Xóa Layer
+layer_hide,Ẩn Layer
+layer_show,Hiện Layer
 
 # waypoint manager
 waypoints,Waypoints
@@ -253,7 +272,7 @@ timeline_critical,Timeline - Chèn Critical
 timeline_trace,Timeline - Chèn Trace
 timeline_guide,Timeline - Chèn Guide
 timeline_damage,Timeline - Chèn Damage
-timeline_dummy,
+timeline_dummy,Timeline - Chèn Fake
 timeline_bpm,Timeline - Chèn BPM
 timeline_time_signature,Timeline - Chèn Time Signature
 timeline_hi_speed,Timeline - Chèn Hi-Speed Change
