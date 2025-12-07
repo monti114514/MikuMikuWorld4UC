@@ -19,6 +19,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3
+      - name: Install NSIS
+        shell: powershell
+        run: choco install nsis -y
       - name: Build
         run: |
           rake build

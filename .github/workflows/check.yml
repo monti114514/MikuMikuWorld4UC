@@ -25,6 +25,8 @@ jobs:
         run: |
           msbuild /p:Configuration=Debug /p:Platform=x64
   check:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
