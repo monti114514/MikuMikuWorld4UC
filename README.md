@@ -2,14 +2,14 @@
 
 # MikuMikuWorld for UntitledCharts
 
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-en)](./MikuMikuWorld/res/i18n/en.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-ja)](./MikuMikuWorld/res/i18n/ja.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-es)](./MikuMikuWorld/res/i18n/es.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-kr)](./MikuMikuWorld/res/i18n/kr.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-ru)](./MikuMikuWorld/res/i18n/ru.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-vi)](./MikuMikuWorld/res/i18n/vi.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-tr)](./MikuMikuWorld/res/i18n/tr.csv)
-[![](https://byob.yarr.is/sevenc-nanashi/MikuMikuWorld4CC/coverage-pt)](./MikuMikuWorld/res/i18n/pt.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-en)](./MikuMikuWorld/res/i18n/en.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-ja)](./MikuMikuWorld/res/i18n/ja.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-es)](./MikuMikuWorld/res/i18n/es.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-kr)](./MikuMikuWorld/res/i18n/kr.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-ru)](./MikuMikuWorld/res/i18n/ru.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-vi)](./MikuMikuWorld/res/i18n/vi.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-tr)](./MikuMikuWorld/res/i18n/tr.csv)
+[![](https://byob.yarr.is/UntitledCharts/MikuMikuWorld4UC/coverage-pt)](./MikuMikuWorld/res/i18n/pt.csv)
 
 Fork of [MikuMikuWorld](https://github.com/crash5band/MikuMikuWorld) for [UntitledCharts](https://untitledcharts.com/).
 
