@@ -748,7 +748,7 @@ namespace MikuMikuWorld
 			float xPos = padding.x;
 			float yPos = ImGui::GetWindowSize().y - UI::btnSmall.y - 2.0f - (padding.y * 2);
 
-			ImGui::Text("%s", getString("name"));
+			ImGui::Text("%s", getString("preset_name"));
 			ImGui::SetNextItemWidth(-1);
 			ImGui::InputText("##preset_name", &presetName);
 
@@ -1826,7 +1826,7 @@ namespace MikuMikuWorld
 			float xPos = padding.x;
 			float yPos = ImGui::GetWindowSize().y - UI::btnSmall.y - 2.0f - (padding.y * 2);
 
-			ImGui::Text("%s", getString("name"));
+			ImGui::Text("%s", getString("layer_name"));
 			ImGui::SetNextItemWidth(-1);
 			ImGui::InputText("##layer_name", &layerName);
 
