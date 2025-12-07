@@ -14,8 +14,7 @@ open_recent, Открыть недавний
 clear, Очистить
 save, Сохранить
 save_as, Сохранить как
-export_score, 
-export, Экспортировать
+export_score, Экспортировать
 exit, Выйти
 edit, Изменить
 undo, Отменить
@@ -46,15 +45,15 @@ discard_changes, Сбросить изменения
 update_available, Обновление приложения доступно!
 update_available_description, Версия %s доступна. Хотите открыть его в браузере?
 score_file, Файл нот
-export_successful,
-unknown_file_format,
-open_as_file_format,
-export_as_file_format,
+#- export_successful,
+#- unknown_file_format,
+#- open_as_file_format,
+#- export_as_file_format,
 error, Ошибка
 error_load_score_file, Произошла ошибка при попытке прочитать ноты.
-error_save_score_file,
+#- error_save_score_file,
 error_load_music_file, Не удалось открыть файл музыки.
-score_partially_missing,
+#- score_partially_missing,
 cancel, Отмена
 general, Общий
 key_config, Конфигурация клавиш
@@ -65,14 +64,14 @@ auto_save, Авто-сохранение
 auto_save_enable, Авто-сохранение включено
 auto_save_interval, Интервал авто-сохранения (мин)
 auto_save_count, Максимальное количество авто-сохранений
+accent_color, Акцентный цвет
+accent_color_help, Выберите акцентный цвет чтобы применить
+select_accent_color, Выберите акцентный цвет
 display_mode, Режим интерфейса
 theme, Тема
 base_theme, Базовая тема
 theme_light, Светлая
 theme_dark, Тёмная
-accent_color, Акцентный цвет
-accent_color_help, Выберите акцентный цвет чтобы применить
-select_accent_color, Выберите акцентный цвет
 custom_color, Кастомный цвет
 timeline, Таймлайн
 match_notes_size_to_timeline, Сопоставить размер нот с шириной таймлайна
@@ -92,33 +91,28 @@ draw_background, Нарисовать фотографию заднего фон
 background_brightnes, Яркость заднего фона
 lanes_opacity, Непрозрачность полосы
 video, Видео
-vsync_enable, VSync
 notes_se, Звуковой эффект нот
-advanced, Продвинутое
 show_tick_in_properties, Показывать тик в характеристиках
-translation_by, Перевод от %s
 
 # score editor / Редактор уровня
+options, Настройки
 chart_properties, Характеристики чарта
 note_properties, Характеристики нот
 notes_timeline, Таймлайн нот
-options, Настройки
 select, Выбрать
 tap, Нота
 hold, Холд
 hold_step, Тик холда
 flick, Флик
 critical, Критикал
-dummy,
-hold_dummy,
+#- dummy,
+#- hold_dummy,
 trace, След
 guide, Гайд
 damage, Дамаг
 bpm, BPM
 time_signature, Отметка времени
 none, Ничего
-follow_cursor, Следовать за курсором
-up, Вверх
 default, По умолчанию
 left, Влево
 right, Вправо
@@ -135,21 +129,27 @@ copy, Скопировать
 cut, Вырезать
 paste, Вставить
 flip_paste, Вставить и повернуть
-flip, Повернуть
 duplicate, Дублировать
 flip_duplicate, Дублировать и повернуть
+flip, Повернуть
 note_width, Ширина нот
 shrink_down, Уменьшить
 shrink_up, Увеличить
+#- compress_selection,
 connect_holds, Соединить холды
 split_hold, Разделить холды
-lerp_hispeeds, Интерполяция Hi-Speeds
 repeat_hold_mids, Повторить Тик Холдов
+#- hold_to_traces,
+#- add_traces_for_hold,
+#- convert_hold_to_traces,
+lerp_hispeeds, Интерполяция Hi-Speeds
 step_type, Тип шага
 ease_type, Тип изгиба
 flick_type, Тип флика
 hold_type, Тип холда
 fade_type, Тип исчезновения
+#- hold_start_type,
+#- hold_end_type,
 metadata, Метадата
 title, Название
 designer, Дизайнер
@@ -163,10 +163,12 @@ volume_master, Общая громкость
 volume_bgm, Громкость песни
 volume_se, Громкость звуковых эффектов
 statistics, Статистика
+#- hispeeds,
 taps, Ноты
 flicks, Флики
 holds, Холды
 steps, Тик холдов
+#- guides,
 traces, Следы
 total, Общий
 combo, Комбо
@@ -219,13 +221,14 @@ note_properties_hi_speed, Характеристики Hi-Speed
 note_properties_hold_note, Характеристики холд ноты
 note_properties_guide, Характеристики гайд ноты
 note_properties_not_selected, Никаких нот или Hi-Speed не было выбрано
+#- note_properties_many_hold_notes,
 translated_by, Перевод от: %s
 zoom_tooltip, Ctrl-клик чтобы изменить значение
 
 # preset manager / менеджер пресетов
 presets, Пресеты
 no_presets, Нет доступных пресетов
-name, Имя
+preset_name, Имя
 description, Описание
 create_preset, Создать пресет
 search, Поиск...
@@ -233,7 +236,7 @@ confirm, Подтвердить
 
 # layer manager / менеджер слоёв
 layers, Слой
-name, Имя
+layer_name, Имя
 create_layer, Создать слой
 confirm, Подтвердить
 show_all_layers, Показать все слои
@@ -257,8 +260,8 @@ keys, Иконки
 add, Добавить
 cmd_key_listen, Ожидание ввода...
 new_chart, Новый чарт
-cancel_paste, Отменить вставку
 toggle_playback, Начать/Остановить
+cancel_paste, Отменить вставку
 stop, Стоп
 previous_tick, Прошлый тик
 next_tick, Следующий тик
@@ -271,7 +274,7 @@ timeline_critical, Таймлайн - Вставьте критикал
 timeline_trace, Таймлайн - Вставьте след
 timeline_guide, Таймлайн - Вставьте гайд
 timeline_damage, Таймлайн - Вставьте дамаг
-timeline_dummy,
+#- timeline_dummy,
 timeline_bpm, Таймлайн - Вставьте BPM
 timeline_time_signature, Таймлайн - Вставьте отметку времени
 timeline_hi_speed, Таймлайн - Вставьте Hi-Speed

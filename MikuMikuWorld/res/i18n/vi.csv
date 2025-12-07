@@ -226,7 +226,7 @@ zoom_tooltip,Ctrl+Chuột Trái để chỉnh sửa
 # preset manager
 presets,Presets
 no_presets,Không có Preset nào có sẵn
-name,Tên
+preset_name,Tên
 description,Mô tả
 create_preset,Tạo Preset
 search,Tìm kiếm...
@@ -234,7 +234,7 @@ confirm,Xác nhận
 
 # layer manager
 layers,Layers
-name,Tên
+layer_name,Tên
 create_layer,Tạo Layer
 confirm,Xác nhận
 show_all_layers,Hiện tất cả Layer

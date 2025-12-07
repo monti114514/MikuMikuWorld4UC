@@ -91,7 +91,6 @@ lanes_opacity,レーンの不透明度
 video, 画面
 notes_se, ノーツSE
 show_tick_in_properties, プロパティにTickを表示
-translation_by, 翻訳：%s
 
 # score editor
 options, オプション
@@ -227,7 +226,7 @@ zoom_tooltip, Ctrl+クリックで値を編集
 # preset manager
 presets, プリセット
 no_presets, プリセットは登録されていません。
-name, 名前
+preset_name, 名前
 description, 説明
 create_preset, プリセットを登録
 search, 検索
@@ -235,7 +234,7 @@ confirm, 決定
 
 # layer manager
 layers, レイヤー
-name, 名前
+layer_name, 名前
 create_layer, レイヤーを作成
 confirm, 決定
 show_all_layers, 全てのレイヤーを表示

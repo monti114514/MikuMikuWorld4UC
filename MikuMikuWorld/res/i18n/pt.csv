@@ -12,7 +12,7 @@ open_recent, Abrir arquivo recente
 clear, Limpar
 save, Salvar
 save_as, Salvar como...
-export_score, 
+#- export_score,
 exit, Sair
 edit, Editar
 undo, Desfazer
@@ -43,15 +43,15 @@ discard_changes, Apagar alterações
 update_available, Há uma atualização disponível.
 update_available_description, A versão %s está disponível. Deseja abri-lá no navegador?
 score_file, Arquivo de música
-export_successful,
-unknown_file_format,
-open_as_file_format,
-export_as_file_format,
+#- export_successful,
+#- unknown_file_format,
+#- open_as_file_format,
+#- export_as_file_format,
 error, Erro
 error_load_score_file, Um erro ocorreu ao carregar a música.
-error_save_score_file,
+#- error_save_score_file,
 error_load_music_file, Não foi possível carregar o arquivo de música.
-score_partially_missing,
+#- score_partially_missing,
 cancel, Cancelar
 general, Geral
 key_config, Configuração das teclas
@@ -91,7 +91,6 @@ lanes_opacity, Opacidade do editor
 video, Vídeo
 notes_se, Efeito sonoro das notas
 show_tick_in_properties, Mostrar tick nas propriedades
-translation_by, Tradução por: %s
 
 # score editor / Editor de charts
 options, Opções
@@ -104,8 +103,8 @@ hold, Hold
 hold_step, Hold (meio)
 flick, Flick
 critical, Crítico
-dummy,
-hold_dummy,
+#- dummy,
+#- hold_dummy,
 trace, Trace
 guide, Guia
 damage, Dano
@@ -134,6 +133,7 @@ flip, Espelhar
 note_width, Largura das notas
 shrink_down, Contrair para baixo
 shrink_up, Contrair para cima
+#- compress_selection,
 connect_holds, Conectar holds
 split_hold, Separar holds
 repeat_hold_mids, Repetir holds (meio)
@@ -161,10 +161,12 @@ volume_master, Volume geral
 volume_bgm, Volume da música
 volume_se, Volume dos efeitos sonoros
 statistics, Estatísticas
+#- hispeeds,
 taps, Taps
 flicks, Flicks
 holds, Holds
 steps, Steps
+#- guides,
 traces, Traces
 total, Total
 combo, Combo
@@ -218,13 +220,13 @@ note_properties_hold_note, Propriedades de Hold
 note_properties_guide, Propriedades de guia
 note_properties_not_selected, Não há notas, guias ou hi-speeds selecionados
 note_properties_many_hold_notes, Mais de uma nota selecionada
-translated_by, Traduzido por:
+translated_by, Traduzido por: %s
 zoom_tooltip, Ferramenta de zoom
 
 # preset manager / Gerenciador de presets
 presets, Presets
 no_presets, Sem presets
-name, Nome
+preset_name, Nome
 description, Descrição
 create_preset, Criar preset
 search, Pesquisar
@@ -232,7 +234,7 @@ confirm, Confirmar
 
 # layer manager / Gerenciador de camadas
 layers, Camadas
-name, Nome
+layer_name, Nome
 create_layer, Criar camada
 confirm, Confirmar
 show_all_layers, Mostrar todas as camadas
@@ -270,7 +272,7 @@ timeline_critical, Editor - Crítico
 timeline_trace, Editor - Trace
 timeline_guide, Editor -  Guia
 timeline_damage, Editor - Dano
-timeline_dummy,
+#- timeline_dummy,
 timeline_bpm, Editor - BPM
 timeline_time_signature, Editor - Indicação de tempo
 timeline_hi_speed, Editor - Hi-speed

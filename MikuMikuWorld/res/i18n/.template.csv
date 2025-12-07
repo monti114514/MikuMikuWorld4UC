@@ -91,7 +91,6 @@ lanes_opacity,
 video,
 notes_se,
 show_tick_in_properties,
-translation_by,
 
 # score editor
 options,
@@ -227,7 +226,7 @@ zoom_tooltip,
 # preset manager
 presets,
 no_presets,
-name,
+preset_name,
 description,
 create_preset,
 search,
@@ -235,7 +234,7 @@ confirm,
 
 # layer manager
 layers,
-name,
+layer_name,
 create_layer,
 confirm,
 show_all_layers,
