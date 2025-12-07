@@ -7,18 +7,18 @@
 
 ;-------------------------------------------------------------------------------
 ; Constants
-!define PRODUCT_NAME "MikuMikuWorld for Chart Cyanvas"
-!define PRODUCT_DESCRIPTION "MikuMikuWorld for Chart Cyanvas"
+!define PRODUCT_NAME "MikuMikuWorld for UntitledCharts"
+!define PRODUCT_DESCRIPTION "MikuMikuWorld for UntitledCharts"
 !define COPYRIGHT "Copyright (c) 2022 Crash5b, 2024 Nanashi."
 !define PRODUCT_VERSION "{version}.0"
 !define SETUP_VERSION "{version}.0"
 
 ;-------------------------------------------------------------------------------
 ; Attributes
-Name "MikuMikuWorld for Chart Cyanvas"
-OutFile "build/mmw4cc-{version}-setup.exe"
-InstallDir "$LOCALAPPDATA\Programs\mmw4cc"
-InstallDirRegKey HKCU "Software\mmw4cc" ""
+Name "MikuMikuWorld for UntitledCharts"
+OutFile "build/mmw4uc-{version}-setup.exe"
+InstallDir "$LOCALAPPDATA\Programs\mmw4uc"
+InstallDirRegKey HKCU "Software\mmw4uc" ""
 RequestExecutionLevel user
 
 ;-------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ Var StartMenuFolder
 !insertmacro MUI_PAGE_DIRECTORY
 
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
-!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\mmw4cc"
+!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\mmw4uc"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 
@@ -66,7 +66,7 @@ Var StartMenuFolder
 
 ;-------------------------------------------------------------------------------
 ; Installer Sections
-Section "MikuMikuWorld for Chart Cyanvas" Mmw4cc
+Section "MikuMikuWorld for UntitledCharts" Mmw4uc
 	SetOutPath "$INSTDIR"
   File /r "build\MikuMikuWorld\*.*"
 
@@ -74,13 +74,13 @@ Section "MikuMikuWorld for Chart Cyanvas" Mmw4cc
 
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\MikuMikuWorld for Chart Cyanvas.lnk" "$INSTDIR\MikuMikuWorld.exe"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\MikuMikuWorld for UntitledCharts.lnk" "$INSTDIR\MikuMikuWorld.exe"
     CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   !insertmacro MUI_STARTMENU_WRITE_END
 
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\mmw4cc" \
-                   "DisplayName" "MikuMikuWorld for Chart Cyanvas"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\mmw4cc" \
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\mmw4uc" \
+                   "DisplayName" "MikuMikuWorld for UntitledCharts"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\mmw4uc" \
                    "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
 
   WriteRegStr HKCU "Software\Classes\.usc" "" "MikuMikuWorld.usc"
@@ -88,10 +88,10 @@ Section "MikuMikuWorld for Chart Cyanvas" Mmw4cc
   WriteRegStr HKCU "Software\Classes\MikuMikuWorld.usc\DefaultIcon" "" "$INSTDIR\MikuMikuWorld.exe"
   WriteRegStr HKCU "Software\Classes\MikuMikuWorld.usc\shell\open\command" "" "$INSTDIR\MikuMikuWorld.exe $\"%1$\""
 
-  WriteRegStr HKCU "Software\Classes\.ccmmws" "" "MikuMikuWorld.ccmmws"
-  WriteRegStr HKCU "Software\Classes\MikuMikuWorld.ccmmws" "" "MMW4CC Chart File"
-  WriteRegStr HKCU "Software\Classes\MikuMikuWorld.ccmmws\DefaultIcon" "" "$INSTDIR\MikuMikuWorld.exe"
-  WriteRegStr HKCU "Software\Classes\MikuMikuWorld.ccmmws\shell\open\command" "" "$INSTDIR\MikuMikuWorld.exe $\"%1$\""
+  WriteRegStr HKCU "Software\Classes\.unchmmws" "" "MikuMikuWorld.unchmmws"
+  WriteRegStr HKCU "Software\Classes\MikuMikuWorld.unchmmws" "" "MMW4UC Chart File"
+  WriteRegStr HKCU "Software\Classes\MikuMikuWorld.unchmmws\DefaultIcon" "" "$INSTDIR\MikuMikuWorld.exe"
+  WriteRegStr HKCU "Software\Classes\MikuMikuWorld.unchmmws\shell\open\command" "" "$INSTDIR\MikuMikuWorld.exe $\"%1$\""
 SectionEnd
 
 ;-------------------------------------------------------------------------------
@@ -99,11 +99,11 @@ SectionEnd
 Section "Uninstall"
 	RMDir /r "$INSTDIR"
   Delete "$INSTDIR\Uninstall.exe"
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\mmw4cc"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\mmw4uc"
   DeleteRegKey HKCU "Software\Classes\.usc"
   DeleteRegKey HKCU "Software\Classes\MikuMikuWorld.usc"
-  DeleteRegKey HKCU "Software\Classes\.ccmmws"
-  DeleteRegKey HKCU "Software\Classes\MikuMikuWorld.ccmmws"
+  DeleteRegKey HKCU "Software\Classes\.unchmmws"
+  DeleteRegKey HKCU "Software\Classes\MikuMikuWorld.unchmmws"
 
   RMDir /r "$SMPROGRAMS\$StartMenuFolder"
 SectionEnd
