@@ -8,9 +8,7 @@
 #include "Constants.h"
 #include "File.h"
 #include "SUS.h"
-#include "ScoreConverter.h"
-#include "SusExporter.h"
-#include "SusParser.h"
+#include "NativeScoreSerializer.h"
 #include "UI.h"
 #include "Utilities.h"
 #include <Windows.h>
@@ -22,12 +20,13 @@ using nlohmann::json;
 namespace MikuMikuWorld
 {
 	static MultiInputBinding* timelineModeBindings[] = {
-		&config.input.timelineSelect,        &config.input.timelineTap,
-		&config.input.timelineHold,          &config.input.timelineHoldMid,
-		&config.input.timelineFlick,         &config.input.timelineCritical,
-		&config.input.timelineFriction,      &config.input.timelineGuide,
-		&config.input.timelineDamage,        &config.input.timelineBpm,
-		&config.input.timelineTimeSignature, &config.input.timelineHiSpeed,
+		&config.input.timelineSelect,   &config.input.timelineTap,
+		&config.input.timelineHold,     &config.input.timelineHoldMid,
+		&config.input.timelineFlick,    &config.input.timelineCritical,
+		&config.input.timelineFriction, &config.input.timelineGuide,
+		&config.input.timelineDamage,   &config.input.timelineDummy,
+		&config.input.timelineBpm,      &config.input.timelineTimeSignature,
+		&config.input.timelineHiSpeed,
 	};
 
 	constexpr const char* toolbarFlickNames[] = { "none", "default", "left", "right" };
@@ -69,15 +68,15 @@ namespace MikuMikuWorld
 
 	void ScoreEditor::fetchUpdate()
 	{
-		return; // TODO Point this to our own repo
 		std::wstring updateFlagPath =
 		    IO::mbToWideStr(Application::getAppDir() + "latest_version.txt");
 		bool shouldFetchUpdate = true;
 		std::string latestVersionString;
 		if (IO::File::exists(updateFlagPath))
 		{
-			auto file = IO::File(updateFlagPath, L"r");
-			auto lastWriteTime = file.getLastWriteTime();
+			auto file = IO::File(updateFlagPath, IO::FileMode::Read);
+			auto lastWriteTime = std::chrono::system_clock::time_point(
+			    std::filesystem::last_write_time(updateFlagPath).time_since_epoch());
 			auto now = std::chrono::system_clock::now();
 			auto diff =
 			    std::chrono::duration_cast<std::chrono::minutes>(now - lastWriteTime).count();
@@ -97,10 +96,10 @@ namespace MikuMikuWorld
 			httplib::Client client("https://api.github.com");
 
 			std::cout << "Fetching new update" << std::endl;
-			auto res = client.Get("/repos/sevenc-nanashi/MikuMikuWorld4cc/releases/latest");
+			auto res = client.Get("/repos/UntitledCharts/MikuMikuWorld4UC/releases/latest");
 			if (!res)
 			{
-				std::cout << "Failed to fetch latest update: client.Get failed" << std::endl;
+				std::cerr << "Failed to fetch latest update: client.Get failed" << std::endl;
 				return;
 			}
 			std::cout << "Status: " << res->status << std::endl;
@@ -111,7 +110,7 @@ namespace MikuMikuWorld
 				latestVersionString = tagName.substr(1);
 			}
 
-			auto file = IO::File(updateFlagPath, L"w");
+			auto file = IO::File(updateFlagPath, IO::FileMode::Write);
 			file.write(latestVersionString);
 			file.flush();
 			file.close();
@@ -184,8 +183,8 @@ namespace MikuMikuWorld
 				trySave(context.workingData.filename);
 			if (ImGui::IsAnyPressed(config.input.saveAs))
 				saveAs();
-			if (ImGui::IsAnyPressed(config.input.exportSus))
-				exportSus();
+			if (ImGui::IsAnyPressed(config.input.exportScore))
+				exportScore();
 			if (ImGui::IsAnyPressed(config.input.togglePlayback))
 				timeline.setPlaying(context, !timeline.isPlaying());
 			if (ImGui::IsAnyPressed(config.input.stop))
@@ -289,6 +288,7 @@ namespace MikuMikuWorld
 		settingsWindow.update();
 		aboutDialog.update();
 		updateAvailableDialog.update();
+		serializeWindow.update(*this, context, timeline);
 
 		ImGui::Begin(IMGUI_TITLE(ICON_FA_MUSIC, "notes_timeline"), NULL,
 		             ImGuiWindowFlags_Static | ImGuiWindowFlags_NoScrollbar |
@@ -385,63 +385,8 @@ namespace MikuMikuWorld
 		if (!IO::File::exists(filename))
 			return;
 
-		std::string extension = IO::File::getFileExtension(filename);
-		std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-
-		// Backup next note ID in case of an import failure
-		try
-		{
-			std::string workingFilename;
-			Score newScore;
-
-			if (extension == SUS_EXTENSION)
-			{
-				SusParser susParser;
-				newScore = ScoreConverter::susToScore(susParser.parse(filename));
-			}
-			else if (extension == USC_EXTENSION)
-			{
-				std::wstring wFilename = IO::mbToWideStr(filename);
-				std::ifstream uscfile(wFilename);
-				json usc;
-				uscfile >> usc;
-				uscfile.close();
-
-				newScore = ScoreConverter::uscToScore(usc);
-			}
-			else if (extension == MMWS_EXTENSION || extension == CC_MMWS_EXTENSION)
-			{
-				newScore = deserializeScore(filename);
-				workingFilename = filename;
-			}
-
-			context.clearSelection();
-			context.history.clear();
-			context.score = std::move(newScore);
-			context.workingData = EditorScoreData(context.score.metadata, workingFilename);
-
-			loadMusic(context.workingData.musicFilename);
-			context.audio.setMusicOffset(0, context.workingData.musicOffset);
-
-			context.scoreStats.calculateStats(context.score);
-			timeline.calculateMaxOffsetFromScore(context.score);
-
-			UI::setWindowTitle((context.workingData.filename.size()
-			                        ? IO::File::getFilename(context.workingData.filename)
-			                        : windowUntitled));
-			context.upToDate = true;
-		}
-		catch (std::exception& error)
-		{
-			std::string errorMessage = IO::formatString(
-			    "%s\n%s: %s\n%s: %s", getString("error_load_score_file"), getString("score_file"),
-			    filename.c_str(), getString("error"), error.what());
-
-			IO::messageBox(APP_NAME, errorMessage, IO::MessageBoxButtons::Ok,
-			               IO::MessageBoxIcon::Error);
-		}
-
-		updateRecentFilesList(filename);
+		timeline.setPlaying(context, false);
+		serializeWindow.deserialize(filename);
 	}
 
 	void ScoreEditor::loadMusic(std::string filename)
@@ -454,8 +399,8 @@ namespace MikuMikuWorld
 		else
 		{
 			std::string errorMessage = IO::formatString(
-			    "%s\n%s: %s\n%ls: %s", getString("error_load_music_file"), getString("music_file"),
-			    IO::mbToWideStr(filename.c_str()), result.getMessage().c_str());
+			    "%s\n%s: %s\n%s: %s", getString("error_load_music_file"), getString("music_file"),
+			    filename.c_str(), getString("error"), result.getMessage().c_str());
 
 			IO::messageBox(APP_NAME, errorMessage, IO::MessageBoxButtons::Ok,
 			               IO::MessageBoxIcon::Error);
@@ -471,7 +416,14 @@ namespace MikuMikuWorld
 		IO::FileDialog fileDialog{};
 		fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 		fileDialog.title = "Open Score File";
-		fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws;*.usc;*.sus" } };
+		fileDialog.filters = { IO::combineFilters("All Supported Files",
+			                                      { IO::mmwsFilter, IO::susFilter, IO::uscFilter,
+			                                        IO::lvlDatFilter }),
+			                   IO::mmwsFilter,
+			                   IO::susFilter,
+			                   IO::uscFilter,
+			                   IO::lvlDatFilter,
+			                   IO::allFilter };
 
 		if (fileDialog.openFile() == IO::FileDialogResult::OK)
 			loadScore(fileDialog.outputFilename);
@@ -491,21 +443,18 @@ namespace MikuMikuWorld
 	{
 		try
 		{
-			int laneExtension = context.score.metadata.laneExtension;
 			context.score.metadata = context.workingData.toScoreMetadata();
-			context.score.metadata.laneExtension = laneExtension;
-			serializeScore(context.score, filename);
+			NativeScoreSerializer().serialize(context.score, filename);
 
 			UI::setWindowTitle(IO::File::getFilename(filename));
 			context.upToDate = true;
 		}
 		catch (const std::exception& err)
 		{
-			IO::messageBox(
-			    APP_NAME,
-			    IO::formatString("An error occurred while saving the score file\n%s", err.what()),
-			    IO::MessageBoxButtons::Ok, IO::MessageBoxIcon::Error);
-
+			IO::messageBox(APP_NAME,
+			               IO::formatString("%s\n%s: %s", getString("error_save_score_file"),
+			                                getString("error"), err.what()),
+			               IO::MessageBoxButtons::Ok, IO::MessageBoxIcon::Error);
 			return false;
 		}
 
@@ -516,8 +465,8 @@ namespace MikuMikuWorld
 	{
 		IO::FileDialog fileDialog{};
 		fileDialog.title = "Save Chart";
-		fileDialog.filters = { { "MikuMikuWorld for Chart Cyanvas Score", "*.ccmmws" } };
-		fileDialog.defaultExtension = "ccmmws";
+		fileDialog.filters = { IO::mmwsFilter };
+		fileDialog.defaultExtension = "ucmmws";
 		fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 		fileDialog.inputFilename =
 		    IO::File::getFilenameWithoutExtension(context.workingData.filename);
@@ -535,71 +484,24 @@ namespace MikuMikuWorld
 		return false;
 	}
 
-	void ScoreEditor::exportSus()
+	void ScoreEditor::exportScore()
 	{
-		IO::FileDialog fileDialog{};
-		fileDialog.title = "Export Chart";
-		fileDialog.filters = { { "Sliding Universal Score", "*.sus" } };
-		fileDialog.defaultExtension = "sus";
-		fileDialog.parentWindowHandle = Application::windowState.windowHandle;
-
-		if (fileDialog.saveFile() == IO::FileDialogResult::OK)
+		SerializeFormat format = static_cast<SerializeFormat>(config.defaultExportFormat);
+		if (ScoreSerializeController::isValidFormat(format))
 		{
-			try
-			{
-				context.score.metadata = context.workingData.toScoreMetadata();
-				SUS sus = ScoreConverter::scoreToSus(context.score);
+			IO::FileDialog fileDialog{};
+			fileDialog.title = "Export Chart";
+			fileDialog.filters = { ScoreSerializeController::getFormatFilter(format) };
+			fileDialog.defaultExtension =
+			    ScoreSerializeController::getFormatDefaultExtension(format);
+			fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 
-				const std::string exportComment =
-				    IO::concat("This file was generated by " APP_NAME,
-				               Application::getAppVersion().c_str(), " ");
-				SusExporter exporter;
-				exporter.dump(sus, fileDialog.outputFilename, exportComment);
-			}
-			catch (std::exception& err)
-			{
-				IO::messageBox(
-				    APP_NAME,
-				    IO::formatString("An error occurred while exporting the score file\n%s",
-				                     err.what()),
-				    IO::MessageBoxButtons::Ok, IO::MessageBoxIcon::Error);
-			}
+			if (fileDialog.saveFile() == IO::FileDialogResult::OK)
+				serializeWindow.serialize(context, fileDialog.outputFilename);
 		}
-	}
-
-	void ScoreEditor::exportUsc()
-	{
-		IO::FileDialog fileDialog{};
-		fileDialog.title = "Export Chart";
-		fileDialog.filters = { { "Universal Sekai Chart", "*.usc" } };
-		fileDialog.defaultExtension = "usc";
-		fileDialog.parentWindowHandle = Application::windowState.windowHandle;
-
-		if (fileDialog.saveFile() == IO::FileDialogResult::OK)
+		else
 		{
-			try
-			{
-				int oldLaneExtension = context.score.metadata.laneExtension;
-				context.score.metadata = context.workingData.toScoreMetadata();
-				context.score.metadata.laneExtension = oldLaneExtension;
-
-				json usc = ScoreConverter::scoreToUsc(context.score);
-
-				std::wstring wFilename = IO::mbToWideStr(fileDialog.outputFilename);
-				IO::File uscfile(wFilename, L"w");
-
-				uscfile.write(usc.dump(config.minifyUsc ? -1 : 4));
-				uscfile.flush();
-				uscfile.close();
-			}
-			catch (std::exception& err)
-			{
-				IO::messageBox(
-				    APP_NAME,
-				    IO::formatString("An error occurred while exporting the score file\n%s",
-				                     err.what()),
-				    IO::MessageBoxButtons::Ok, IO::MessageBoxIcon::Error);
-			}
+			serializeWindow.serialize(context);
 		}
 	}
 
@@ -655,54 +557,9 @@ namespace MikuMikuWorld
 			if (ImGui::MenuItem(getString("save_as"), ToShortcutString(config.input.saveAs)))
 				saveAs();
 
-			if (ImGui::MenuItem(getString("export_usc"), ToShortcutString(config.input.exportUsc)))
-				exportUsc();
-
-			if (config.showSusExport)
-			{
-
-				bool canExportSus = context.score.metadata.laneExtension == 0;
-				if (canExportSus)
-				{
-					for (auto& [_, hold] : context.score.holdNotes)
-					{
-						if (hold.guideColor == GuideColor::Green ||
-						    hold.guideColor == GuideColor::Yellow)
-						{
-							continue;
-						}
-
-						canExportSus = false;
-						break;
-					}
-				}
-				if (canExportSus)
-				{
-					for (auto& [_, note] : context.score.notes)
-					{
-						if (floor(note.width) == note.width && floor(note.lane) == note.lane)
-						{
-							continue;
-						}
-
-						canExportSus = false;
-						break;
-					}
-				}
-
-				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !canExportSus);
-				if (!canExportSus)
-					ImGui::PushStyleColor(ImGuiCol_Text,
-					                      ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-				if (ImGui::MenuItem(getString("export_sus"),
-				                    ToShortcutString(config.input.exportSus)))
-					exportSus();
-				if (!canExportSus)
-				{
-					ImGui::PopStyleColor();
-				}
-				ImGui::PopItemFlag();
-			}
+			if (ImGui::MenuItem(getString("export_score"),
+			                    ToShortcutString(config.input.exportScore)))
+				exportScore();
 
 			ImGui::Separator();
 			if (ImGui::MenuItem(getString("exit"),
@@ -864,9 +721,9 @@ namespace MikuMikuWorld
 		if (UI::toolbarButton(ICON_FA_SAVE, getString("save"), ToShortcutString(config.input.save)))
 			trySave(context.workingData.filename);
 
-		if (UI::toolbarButton(ICON_FA_FILE_EXPORT, getString("export_usc"),
-		                      ToShortcutString(config.input.exportUsc)))
-			exportUsc();
+		if (UI::toolbarButton(ICON_FA_FILE_EXPORT, getString("export_score"),
+		                      ToShortcutString(config.input.exportScore)))
+			exportScore();
 
 		UI::toolbarSeparator();
 
@@ -939,11 +796,10 @@ namespace MikuMikuWorld
 		if (!std::filesystem::exists(wAutoSaveDir))
 			std::filesystem::create_directory(wAutoSaveDir);
 
-		int laneExtension = context.score.metadata.laneExtension;
 		context.score.metadata = context.workingData.toScoreMetadata();
-		context.score.metadata.laneExtension = laneExtension;
-		serializeScore(context.score, autoSavePath + "\\mmw_auto_save_" +
-		                                  Utilities::getCurrentDateTime() + CC_MMWS_EXTENSION);
+		NativeScoreSerializer().serialize(context.score, autoSavePath + "\\mmw_auto_save_" +
+		                                                     Utilities::getCurrentDateTime() +
+		                                                     UC_MMWS_EXTENSION);
 
 		// get mmws files
 		int mmwsCount = 0;
@@ -951,7 +807,7 @@ namespace MikuMikuWorld
 		{
 			std::string extension = file.path().extension().string();
 			std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-			mmwsCount += extension == CC_MMWS_EXTENSION;
+			mmwsCount += extension == UC_MMWS_EXTENSION;
 		}
 
 		// delete older files
@@ -977,8 +833,7 @@ namespace MikuMikuWorld
 		}
 
 		// sort files by modification date
-		std::sort(deleteFiles.begin(), deleteFiles.end(),
-		          [](const entry& f1, const entry& f2)
+		std::sort(deleteFiles.begin(), deleteFiles.end(), [](const entry& f1, const entry& f2)
 		          { return f1.last_write_time() < f2.last_write_time(); });
 
 		int deleteCount = 0;

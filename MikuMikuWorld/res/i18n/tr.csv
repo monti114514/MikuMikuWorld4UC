@@ -12,8 +12,7 @@ open_recent, Yakin zamanda düzenlenmis dosyayi aç
 clear, Temizle
 save, Kaydet
 save_as, Farkli Kaydet
-export_sus, SUS olarak disari aktar...
-export_usc, USC olarak disari aktar...
+#- export_score,
 exit, Çik
 edit, Düzenle
 undo, Geri al
@@ -44,15 +43,20 @@ discard_changes, Degisiklikleri saklama
 update_available, Yeni bir versiyon kullanilabilir!
 update_available_description, %s mevcuttur. Tarayicinizda açmak ister misiniz?
 score_file, Puan dosyasi
+#- export_successful,
+#- unknown_file_format,
+#- open_as_file_format,
+#- export_as_file_format,
 error, Hata
 error_load_score_file, Puan dosyasini okurken bir hata olustu
+#- error_save_score_file,
 error_load_music_file, Müzik dosyasi açilamiyor
+#- score_partially_missing,
 cancel, Iptal
 general, Genel
 key_config, Tus konfigurasyonu
 language, Lisan
-minify_usc, USC'yi küçültün
-show_sus_export, SUS seklinde disari aktarmaya izin verin
+minify, Küçültün
 auto, Otomatik
 auto_save, Otomatik kayit
 auto_save_enable, Otomatik kayit açildi
@@ -87,7 +91,6 @@ lanes_opacity, Yol Opakligi
 video, Video
 notes_se, Not SE
 show_tick_in_properties, Not Özellikleri Penceresinde Tik Göster
-translation_by, Çeviren: %s
 
 # score editor
 options, Seçenekler
@@ -100,6 +103,8 @@ hold, Basili Tut
 hold_step, Ortasina Basili Tut
 flick, Firlat
 critical, Kritik
+#- dummy,
+#- hold_dummy,
 trace, Iz
 guide, Kilavuz
 damage, Hasar
@@ -128,15 +133,21 @@ flip, Çevir
 note_width, Nota Genisligi
 shrink_down, Küçült
 shrink_up, Büyüt
+#- compress_selection,
 connect_holds, Basili Tutma Bagla
 split_hold, Basili Tutmayi Böl
-lerp_hispeeds, Hi-Speed'leri Arastir
 repeat_hold_mids, Basili Tutma Ortalarini Tekrarla
+#- hold_to_traces,
+#- add_traces_for_hold,
+#- convert_hold_to_traces,
+lerp_hispeeds, Hi-Speed'leri Arastir
 step_type, Basili Tutma Türü
 ease_type, Yavaslama Türü
 flick_type, Firlatma Türü
 hold_type, Basili Tutma Türü
 fade_type, Solma Türü
+#- hold_start_type,
+#- hold_end_type,
 metadata, Meta veri
 title, Baslik
 designer, Tasarimci
@@ -150,10 +161,12 @@ volume_master, Ana Ses
 volume_bgm, BGM Ses
 volume_se, SE Ses
 statistics, Istatistikler
+#- hispeeds,
 taps, Dokunuslar
 flicks, Firlatmalar
 holds, Basili Tutmalar
 steps, Basili Tutma Ortalari
+#- guides,
 traces, Izler
 total, Toplam
 combo, Kombinasyon
@@ -213,7 +226,7 @@ zoom_tooltip, Ctrl-tiklayarak degeri düzenleyin
 # preset manager
 presets, Ön Ayarlar
 no_presets, Ön ayar mevcut degil
-name, Isim
+preset_name, Isim
 description, Açiklama
 create_preset, Ön Ayar Olustur
 search, Ara...
@@ -221,7 +234,7 @@ confirm, Onayla
 
 # layer manager
 layers, Katmanlar
-name, Isim
+layer_name, Isim
 create_layer, Katman Olustur
 confirm, Onayla
 show_all_layers, Tüm Katmanlari Göster
@@ -259,6 +272,7 @@ timeline_critical, Zaman Çizelgesi - Kritik Ekle
 timeline_trace, Zaman Çizelgesi - Iz Ekle
 timeline_guide, Zaman Çizelgesi - Kilavuz Ekle
 timeline_damage, Zaman Çizelgesi - Hasar Ekle
+#- timeline_dummy,
 timeline_bpm, Zaman Çizelgesi - BPM Ekle
 timeline_time_signature, Zaman Çizelgesi - Zaman Imzasi Ekle
 timeline_hi_speed, Zaman Çizelgesi - Hi-Speed Degisikligi Ekle

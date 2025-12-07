@@ -17,7 +17,7 @@ namespace MikuMikuWorld
 	std::string Application::pendingLoadScoreFile;
 	WindowState Application::windowState;
 
-	NoteTextures noteTextures{ -1, -1, -1, -1, -1 };
+	NoteTextures noteTextures{ -1, -1, -1, -1, -1, -1 };
 
 	Application::Application() : initialized{ false }
 	{
@@ -150,8 +150,7 @@ namespace MikuMikuWorld
 			std::string extension = IO::File::getFileExtension(*it);
 			std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
 
-			if (extension == SUS_EXTENSION || extension == USC_EXTENSION ||
-			    extension == MMWS_EXTENSION || extension == CC_MMWS_EXTENSION)
+			if (ScoreSerializeController::isValidFormat(ScoreSerializeController::toSerializeFormat(*it)))
 				scoreFile = *it;
 			else if (Audio::isSupportedFileFormat(extension))
 				musicFile = *it;
@@ -319,6 +318,7 @@ namespace MikuMikuWorld
 		                             TextureFilterMode::LinearMipMapLinear,
 		                             TextureFilterMode::Linear);
 		ResourceManager::loadTexture(texturesDir + "notes2.png");
+		ResourceManager::loadTexture(texturesDir + "notes3.png");
 		ResourceManager::loadTexture(texturesDir + "longNoteLine.png");
 		ResourceManager::loadTexture(texturesDir + "touchLine_eff.png");
 		ResourceManager::loadTexture(texturesDir + "guideColors.png");
@@ -340,6 +340,7 @@ namespace MikuMikuWorld
 				    appDir + IO::formatString("res\\textures\\timeline_guide_%s_%s.png", color,
 				                              std::string(fade).substr(5).c_str()));
 		ResourceManager::loadTexture(texturesDir + "timeline_damage.png");
+		ResourceManager::loadTexture(texturesDir + "timeline_dummy.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_bpm.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_time_signature.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_hi_speed.png");
@@ -349,6 +350,8 @@ namespace MikuMikuWorld
 		noteTextures.touchLine = ResourceManager::getTexture(TOUCH_LINE_TEX);
 		noteTextures.ccNotes = ResourceManager::getTexture(CC_NOTES_TEX);
 		noteTextures.guideColors = ResourceManager::getTexture(GUIDE_COLORS_TEX);
+		noteTextures.dummyNotes = ResourceManager::getTexture(DUMMY_RED_CROSS);
+
 
 		Localization::loadLanguages(appDir + "res\\i18n");
 	}

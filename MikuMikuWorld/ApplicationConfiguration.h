@@ -40,9 +40,7 @@ namespace MikuMikuWorld
 		MultiInputBinding save = { "save", { ImGuiKey_S, ImGuiModFlags_Ctrl } };
 		MultiInputBinding saveAs = { "save_as",
 			                         { ImGuiKey_S, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift } };
-		MultiInputBinding exportSus = { "export_sus",
-			                            { ImGuiKey_E, ImGuiModFlags_Shift | ImGuiModFlags_Ctrl } };
-		MultiInputBinding exportUsc = { "export_usc", { ImGuiKey_E, ImGuiModFlags_Ctrl } };
+		MultiInputBinding exportScore = { "export_score", { ImGuiKey_E, ImGuiModFlags_Ctrl } };
 		MultiInputBinding selectAll = { "select_all", { ImGuiKey_A, ImGuiModFlags_Ctrl } };
 		MultiInputBinding undo = { "undo", { ImGuiKey_Z, ImGuiModFlags_Ctrl } };
 		MultiInputBinding redo = { "redo", { ImGuiKey_Y, ImGuiModFlags_Ctrl } };
@@ -68,6 +66,7 @@ namespace MikuMikuWorld
 			                                   { ImGuiKey_Keypad7 } };
 		MultiInputBinding timelineGuide = { "timeline_guide", {} };
 		MultiInputBinding timelineDamage = { "timeline_damage", {} };
+		MultiInputBinding timelineDummy = { "timeline_dummy", {} };
 		MultiInputBinding timelineBpm = { "timeline_bpm", { ImGuiKey_8 }, { ImGuiKey_Keypad8 } };
 		MultiInputBinding timelineTimeSignature = { "timeline_time_signature",
 			                                        { ImGuiKey_9 },
@@ -97,8 +96,8 @@ namespace MikuMikuWorld
 		float zoom;
 
 		// settings
-		bool minifyUsc;
-		bool showSusExport;
+		bool minifyOutput;
+		int defaultExportFormat;
 		int timelineWidth;
 		int notesHeight;
 		bool matchNotesSizeToTimeline;
@@ -142,8 +141,7 @@ namespace MikuMikuWorld
 		&config.input.open,
 		&config.input.save,
 		&config.input.saveAs,
-		&config.input.exportSus,
-		&config.input.exportUsc,
+		&config.input.exportScore,
 		&config.input.undo,
 		&config.input.redo,
 
@@ -182,6 +180,7 @@ namespace MikuMikuWorld
 		&config.input.timelineFriction,
 		&config.input.timelineGuide,
 		&config.input.timelineDamage,
+		&config.input.timelineDummy,
 		&config.input.timelineBpm,
 		&config.input.timelineTimeSignature,
 		&config.input.timelineHiSpeed,

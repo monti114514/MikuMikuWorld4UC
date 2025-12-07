@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <memory>
 
+#define Z_CHUNK_SIZE 32768ULL
+
 namespace IO
 {
 	enum class MessageBoxButtons : uint8_t
@@ -56,6 +58,10 @@ namespace IO
 
 	std::string concat(const char* s1, const char* s2, const char* join = "");
 
+	std::vector<uint8_t> inflateGzip(const std::vector<uint8_t>& data);
+	std::vector<uint8_t> deflateGzip(const std::vector<uint8_t>& data);
+	bool isGzipCompressed(const std::vector<uint8_t>& data);
+
 	template <typename... Args> std::string formatString(const char* format, Args... args)
 	{
 		size_t length = std::snprintf(nullptr, 0, format, args...) + 1;
@@ -69,4 +75,6 @@ namespace IO
 	}
 	MessageBoxResult messageBox(std::string title, std::string message, MessageBoxButtons buttons,
 	                            MessageBoxIcon icon, void* parentWindow = NULL);
+
+
 }

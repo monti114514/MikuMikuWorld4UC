@@ -176,9 +176,9 @@ namespace MikuMikuWorld
 		void drawWaveform(ScoreContext& context);
 
 		void drawHoldCurve(const Note& n1, const Note& n2, EaseType ease, bool isGuide,
-		                   Renderer* renderer, const Color& tint, const int offsetTick = 0,
-		                   const int offsetLane = 0, const float startAlpha = 1,
-		                   const float endAlpha = 1,
+		                   bool isDummy, Renderer* renderer, const Color& tint,
+		                   const int offsetTick = 0, const int offsetLane = 0,
+		                   const float startAlpha = 1, const float endAlpha = 1,
 		                   const GuideColor guideColor = GuideColor::Green,
 		                   const int selectedLayer = -1);
 		void drawHoldNote(const std::unordered_map<id_t, Note>& notes, const HoldNote& note,
@@ -190,6 +190,10 @@ namespace MikuMikuWorld
 		void drawFlickArrow(const Note& note, Renderer* renderer, const Color& tint,
 		                    const int offsetTick = 0, const int offsetLane = 0,
 		                    const bool selectedLayer = true);
+		void drawDummyCrossMark(const Note& note, Renderer* renderer, const Color& tint,
+		                        const int offsetTick = 0, const int offsetLane = 0,
+		                        const bool selectedLayer = true);
+
 		void drawNote(const Note& note, Renderer* renderer, const Color& tint,
 		              const int offsetTick = 0, const int offsetLane = 0,
 		              const bool selectedLayer = true);
@@ -198,19 +202,19 @@ namespace MikuMikuWorld
 		                const bool selectedLayer = true);
 		bool noteControl(ScoreContext& context, const Note& note, const ImVec2& pos,
 		                 const ImVec2& sz, const char* id, ImGuiMouseCursor cursor);
-		bool bpmControl(const Score& score, const Tempo& tempo);
-		bool bpmControl(const Score& score, float bpm, int tick, bool enabled);
-		bool timeSignatureControl(const Score& score, int numerator, int denominator, int tick,
-		                          bool enabled);
-		bool skillControl(const Score& score, const SkillTrigger& skill);
-		bool skillControl(const Score& score, int tick, bool enabled);
-		bool feverControl(const Score& score, const Fever& fever);
-		bool feverControl(const Score& score, int tick, bool start, bool enabled);
+		bool bpmControl(const ScoreContext& context, const Tempo& tempo);
+		bool bpmControl(const ScoreContext& context, float bpm, int tick, bool enabled);
+		bool timeSignatureControl(const ScoreContext& context, int numerator, int denominator,
+		                          int tick, bool enabled);
+		bool skillControl(const ScoreContext& context, const SkillTrigger& skill);
+		bool skillControl(const ScoreContext& context, int tick, bool enabled);
+		bool feverControl(const ScoreContext& context, const Fever& fever);
+		bool feverControl(const ScoreContext& context, int tick, bool start, bool enabled);
 		bool hiSpeedControl(const ScoreContext& context, const HiSpeedChange& hiSpeed);
 		bool hiSpeedControl(const ScoreContext& context, int tick, float speed, int layer,
 		                    bool selected = false);
-		bool waypointControl(const Score& score, const Waypoint& waypoint);
-		bool waypointControl(const Score& score, std::string name, int tick);
+		bool waypointControl(const ScoreContext& context, const Waypoint& waypoint);
+		bool waypointControl(const ScoreContext& context, std::string name, int tick);
 
 		void drawInputNote(Renderer* renderer);
 		void previewInput(const ScoreContext& context, EditArgs& edit, Renderer* renderer);
@@ -253,7 +257,7 @@ namespace MikuMikuWorld
 		float tickToPosition(int tick) const;
 		float getNoteYPosFromTick(int tick) const;
 
-		int laneFromCenterPosition(const Score& score, int lane, int width);
+		int laneFromCenterPosition(const ScoreContext& context, int lane, int width);
 		float positionToLane(float pos) const;
 		float laneToPosition(float lane) const;
 
@@ -262,13 +266,13 @@ namespace MikuMikuWorld
 		{
 			return getTimelineStartX() + (laneWidth * 12);
 		}
-		const inline float getTimelineStartX(const Score& score) const
+		const inline float getTimelineStartX(const ScoreContext& context) const
 		{
-			return getTimelineStartX() - (laneWidth * score.metadata.laneExtension);
+			return getTimelineStartX() - (laneWidth * context.workingData.laneExtension);
 		}
-		const inline float getTimelineEndX(const Score& score) const
+		const inline float getTimelineEndX(const ScoreContext& context) const
 		{
-			return getTimelineEndX() + (laneWidth * score.metadata.laneExtension);
+			return getTimelineEndX() + (laneWidth * context.workingData.laneExtension);
 		}
 
 		constexpr inline float getZoom() const { return zoom; }
@@ -290,7 +294,7 @@ namespace MikuMikuWorld
 		void update(ScoreContext& context, EditArgs& edit, Renderer* renderer);
 		void updateNotes(ScoreContext& context, EditArgs& edit, Renderer* renderer);
 		void updateNote(ScoreContext& context, EditArgs& edit, Note& note);
-		void updateInputNotes(const Score& score, EditArgs& edit);
+		void updateInputNotes(const ScoreContext& context, EditArgs& edit);
 		void debug(ScoreContext& context);
 
 		void previousTick(ScoreContext& context);

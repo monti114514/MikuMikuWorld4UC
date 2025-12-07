@@ -61,6 +61,11 @@ namespace MikuMikuWorld
 		combo = score.notes.size();
 
 		constexpr int halfBeat = TICKS_PER_BEAT / 2;
+		for (const auto& [id, note] : score.notes)
+		{
+			if (note.dummy)
+				combo--;
+		}
 		for (const auto& [id, hold] : score.holdNotes)
 		{
 			if (hold.isGuide())
@@ -71,15 +76,18 @@ namespace MikuMikuWorld
 			}
 
 			// Hidden hold starts and ends do not count towards combo
-			if (hold.startType != HoldNoteType::Normal)
+			if (!score.notes.at(hold.start.ID).dummy && hold.startType != HoldNoteType::Normal)
 				combo--;
 
-			if (hold.endType != HoldNoteType::Normal)
+			if (!score.notes.at(hold.end).dummy && hold.endType != HoldNoteType::Normal)
 				combo--;
 
 			combo -= std::count_if(hold.steps.begin(), hold.steps.end(),
 			                       [](const HoldStep& step)
 			                       { return step.type == HoldStepType::Hidden; });
+
+			if (hold.dummy)
+				continue;
 
 			int startTick = score.notes.at(id).tick;
 			int endTick = score.notes.at(hold.end).tick;

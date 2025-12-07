@@ -142,9 +142,7 @@ namespace MikuMikuWorld
 
 	SUS SusParser::parse(const std::string& filename)
 	{
-		std::wstring wFilename = mbToWideStr(filename);
-
-		File susFile(wFilename, L"r");
+		File susFile(filename, FileMode::Read);
 		auto lines = susFile.readAllLines();
 		susFile.close();
 

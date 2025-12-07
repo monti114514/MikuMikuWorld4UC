@@ -31,8 +31,7 @@ namespace MikuMikuWorld
 			{
 				IO::FileDialog fileDialog{};
 				fileDialog.title = "Open Image File";
-				fileDialog.filters = { { "Image Files", "*.jpg;*.jpeg;*.png" },
-					                   { IO::allFilesName, IO::allFilesFilter } };
+				fileDialog.filters = { IO::imageFilter, IO::allFilter };
 				fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 
 				if (fileDialog.openFile() == IO::FileDialogResult::OK)
@@ -40,7 +39,7 @@ namespace MikuMikuWorld
 			}
 			context.workingData.jacket.draw();
 
-			UI::addIntProperty(getString("lane_extension"), context.score.metadata.laneExtension, 0,
+			UI::addIntProperty(getString("lane_extension"), context.workingData.laneExtension, 0,
 			                   100);
 			UI::endPropertyColumns();
 		}
@@ -62,8 +61,7 @@ namespace MikuMikuWorld
 			{
 				IO::FileDialog fileDialog{};
 				fileDialog.title = "Open Audio File";
-				fileDialog.filters = { { "Audio Files", "*.mp3;*.wav;*.flac;*.ogg" },
-					                   { IO::allFilesName, IO::allFilesFilter } };
+				fileDialog.filters = { IO::audioFilter, IO::allFilter };
 				fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 
 				if (fileDialog.openFile() == IO::FileDialogResult::OK)
@@ -338,12 +336,34 @@ namespace MikuMikuWorld
 							edited = true;
 						}
 
-						if (UI::addCheckboxProperty(getString("isdummy"), note.isDummy))
+						bool selectingAnyDummy = !std::all_of(
+						    context.selectedNotes.begin(), context.selectedNotes.end(),
+						    [&](id_t id)
+						    {
+							    auto& n = context.score.notes.at(id);
+							    if (!n.isHold())
+								    return false;
+							    auto& h = context.score.holdNotes.at(
+							        n.getType() == NoteType::Hold ? n.ID : n.parentID);
+							    switch (n.getType())
+							    {
+							    case NoteType::Hold:
+								    return h.startType == HoldNoteType::Hidden;
+							    case NoteType::HoldEnd:
+								    return h.endType == HoldNoteType::Hidden;
+							    case NoteType::HoldMid:
+								    return h[findHoldStep(h, id)].type == HoldStepType::Hidden;
+							    }
+							    return false;
+						    });
+
+						if (selectingAnyDummy &&
+						    UI::addCheckboxProperty(getString("dummy"), note.dummy))
 						{
 							for (auto& id : context.selectedNotes)
 							{
 								auto& n = context.score.notes.at(id);
-								n.isDummy = note.isDummy;
+								n.dummy = note.dummy;
 							}
 							edited = true;
 						}
@@ -403,16 +423,15 @@ namespace MikuMikuWorld
 					edited = true;
 				}
 
-				if (UI::addCheckboxProperty(getString("isdummy"), note.isDummy))
+				if (UI::addCheckboxProperty(getString("dummy"), note.dummy))
 				{
 					for (auto& id : context.selectedNotes)
 					{
 						auto& n = context.score.notes.at(id);
-						n.isDummy = note.isDummy;
+						n.dummy = note.dummy;
 					}
 					edited = true;
 				}
-
 			}
 
 			UI::endPropertyColumns();
@@ -542,6 +561,11 @@ namespace MikuMikuWorld
 								}
 								edited = true;
 							}
+
+							if (UI::addCheckboxProperty(getString("hold_dummy"), hold.dummy))
+							{
+								edited = true;
+							}
 						}
 					}
 				}
@@ -605,12 +629,10 @@ namespace MikuMikuWorld
 			                                  guideColorsForString, arrayLength(guideColors));
 			UI::addSelectProperty<FadeType>(getString("fade_type"), edit.fadeType, fadeTypes,
 			                                arrayLength(fadeTypes));
-			UI::addSelectProperty<HoldEndType>(getString("hold_start_type"),
-			                                   edit.holdStartType, holdEndTypes,
-			                                   arrayLength(holdEndTypes));
-			UI::addSelectProperty<HoldEndType>(getString("hold_end_type"),
-			                                   edit.holdEndType, holdEndTypes,
-			                                   arrayLength(holdEndTypes));
+			UI::addSelectProperty<HoldEndType>(getString("hold_start_type"), edit.holdStartType,
+			                                   holdEndTypes, arrayLength(holdEndTypes));
+			UI::addSelectProperty<HoldEndType>(getString("hold_end_type"), edit.holdEndType,
+			                                   holdEndTypes, arrayLength(holdEndTypes));
 
 			break;
 		}
@@ -726,7 +748,7 @@ namespace MikuMikuWorld
 			float xPos = padding.x;
 			float yPos = ImGui::GetWindowSize().y - UI::btnSmall.y - 2.0f - (padding.y * 2);
 
-			ImGui::Text("%s", getString("name"));
+			ImGui::Text("%s", getString("preset_name"));
 			ImGui::SetNextItemWidth(-1);
 			ImGui::InputText("##preset_name", &presetName);
 
@@ -933,15 +955,16 @@ namespace MikuMikuWorld
 
 		ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetWorkCenter(), ImGuiCond_Always,
 		                        ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(450, 250), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(500, 350), ImGuiCond_Appearing);
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL, ImGuiWindowFlags_NoResize))
+		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL,
+		                           ImGuiWindowFlags_NoResize))
 		{
 			ImGui::Text(APP_NAME "\n"
-				"This application is based on MikuMikuWorld for Chart Cyanvas\n"
-			    "Copyright (c) 2023 Nanashi. (@sevenc-nanashi)\n\n"
-			    "\n\nWhich was based on MikuMikuWorld.\n"
-				"Copyright (C) 2022 Crash5b\n\n");
+			                     "This application is based on MikuMikuWorld for Chart Cyanvas\n"
+			                     "Copyright (c) 2023 Nanashi. (@sevenc-nanashi)\n\n"
+			                     "Which was based on MikuMikuWorld.\n"
+			                     "Copyright (C) 2022 Crash5b\n\n");
 			ImGui::Separator();
 
 			float okButtonHeight = ImGui::GetFrameHeight();
@@ -1343,13 +1366,12 @@ namespace MikuMikuWorld
 						UI::endPropertyColumns();
 					}
 
-					if (ImGui::CollapsingHeader(getString("file"), ImGuiTreeNodeFlags_DefaultOpen))
-					{
-						UI::beginPropertyColumns();
-						UI::addCheckboxProperty(getString("minify_usc"), config.minifyUsc);
-						UI::addCheckboxProperty(getString("show_sus_export"), config.showSusExport);
-						UI::endPropertyColumns();
-					}
+					//if (ImGui::CollapsingHeader(getString("file"), ImGuiTreeNodeFlags_DefaultOpen))
+					//{
+					//	UI::beginPropertyColumns();
+					//	UI::addCheckboxProperty(getString("minify"), config.minifyOutput);
+					//	UI::endPropertyColumns();
+					//}
 
 					if (ImGui::CollapsingHeader(getString("auto_save"),
 					                            ImGuiTreeNodeFlags_DefaultOpen))
@@ -1524,8 +1546,7 @@ namespace MikuMikuWorld
 						{
 							IO::FileDialog fileDialog{};
 							fileDialog.title = "Open Image File";
-							fileDialog.filters = { { "Image Files", "*.jpg;*.jpeg;*.png" },
-								                   { IO::allFilesName, IO::allFilesFilter } };
+							fileDialog.filters = { IO::imageFilter, IO::allFilter };
 							fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 
 							if (fileDialog.openFile() == IO::FileDialogResult::OK)
@@ -1806,7 +1827,7 @@ namespace MikuMikuWorld
 			float xPos = padding.x;
 			float yPos = ImGui::GetWindowSize().y - UI::btnSmall.y - 2.0f - (padding.y * 2);
 
-			ImGui::Text("%s", getString("name"));
+			ImGui::Text("%s", getString("layer_name"));
 			ImGui::SetNextItemWidth(-1);
 			ImGui::InputText("##layer_name", &layerName);
 

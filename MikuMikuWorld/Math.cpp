@@ -1,10 +1,23 @@
 #include "Math.h"
+#include <stdexcept>
 
 namespace MikuMikuWorld
 {
 	float lerp(float start, float end, float percentage)
 	{
 		return start + percentage * (end - start);
+	}
+
+	float unlerp(float start, float end, float value) { return (value - start) / (end - start); }
+
+	double lerpD(double start, double end, double percentage)
+	{
+		return start + percentage * (end - start);
+	}
+
+	double unlerpD(double start, double end, double value)
+	{
+		return (value - start) / (end - start);
 	}
 
 	float easeIn(float start, float end, float ratio) { return lerp(start, end, ratio * ratio); }
@@ -59,6 +72,27 @@ namespace MikuMikuWorld
 		}
 
 		return lerp;
+	}
+
+	std::tuple<Vector2, Vector2, Vector2> convertToBezier(const Vector2& p1, const Vector2 p2,
+	                                                      EaseType ease)
+	{
+		Vector2 ctrlPoint = { 0, midpoint(p1.y, p2.y) };
+		switch (ease)
+		{
+		case EaseType::Linear:
+			ctrlPoint.x = midpoint(p1.x, p2.x);
+			break;
+		case EaseType::EaseIn:
+			ctrlPoint.x = p1.x;
+			break;
+		case EaseType::EaseOut:
+			ctrlPoint.x = p2.x;
+			break;
+		default:
+			throw std::runtime_error("Can't convert to specified EaseType");
+		}
+		return { p1, ctrlPoint, p2 };
 	}
 
 	uint32_t gcf(uint32_t a, uint32_t b)

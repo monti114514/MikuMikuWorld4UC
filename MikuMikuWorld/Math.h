@@ -19,6 +19,9 @@ namespace MikuMikuWorld
 		Vector2 operator-(const Vector2& v) { return Vector2(x - v.x, y - v.y); }
 
 		Vector2 operator*(const Vector2& v) { return Vector2(x * v.x, y * v.y); }
+
+		inline Vector2(const ImVec2& vec) : x(vec.x), y(vec.y) {}
+		inline operator ImVec2() const { return { x, y }; }
 	};
 
 	struct Color
@@ -76,7 +79,27 @@ namespace MikuMikuWorld
 		return v;
 	}
 
+	template <typename FloatType = double> static auto roundOff(double value, int precision = 7)
+	{
+		FloatType dvalue = value;
+		double digits = std::pow(10, precision);
+		return std::round(dvalue * digits) / digits;
+	}
+
+	template <typename FloatType>
+	static bool isClose(FloatType val, FloatType tgr,
+	                    FloatType epsilon = std::numeric_limits<FloatType>::epsilon())
+	{
+		if (val == tgr)
+			return true;
+		FloatType tolerance = epsilon * std::max(std::fabs(val), std::fabs(tgr));
+		return std::fabs(val - tgr) <= std::max(epsilon, tolerance);
+	}
+
 	float lerp(float start, float end, float ratio);
+	float unlerp(float start, float end, float value);
+	double lerpD(double start, double end, double ratio);
+	double unlerpD(double start, double end, double value);
 	float easeIn(float start, float end, float ratio);
 	float easeOut(float start, float end, float ratio);
 	float easeInOut(float start, float end, float ratio);
@@ -85,6 +108,9 @@ namespace MikuMikuWorld
 	bool isWithinRange(float x, float left, float right);
 
 	std::function<float(float, float, float)> getEaseFunction(EaseType ease);
+
+	std::tuple<Vector2, Vector2, Vector2> convertToBezier(const Vector2& p1, const Vector2 p2,
+	                                                      EaseType ease);
 
 	uint32_t gcf(uint32_t a, uint32_t b);
 }

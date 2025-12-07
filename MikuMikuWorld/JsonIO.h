@@ -18,6 +18,15 @@ namespace jsonIO
 		return jsonIO::keyExists(js, key) && js[key].is_array() && js[key].size();
 	}
 
+	template <typename T>
+	static auto optional_get_to(const nlohmann::json& j, const std::string& k, T& v)
+	    -> decltype(j.get_to(v), T())
+	{
+		if (j.contains(k))
+			return j[k].get_to(v);
+		return v;
+	}
+
 	template <typename T> T tryGetValue(const nlohmann::json& js, const char* key, T def = {})
 	{
 		return keyExists(js, key) ? (T)js[key] : def;

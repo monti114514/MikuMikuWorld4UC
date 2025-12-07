@@ -50,6 +50,7 @@ namespace MikuMikuWorld
 		int touchLine;
 		int ccNotes;
 		int guideColors;
+		int dummyNotes;
 	};
 
 	extern NoteTextures noteTextures;
@@ -69,7 +70,7 @@ namespace MikuMikuWorld
 		float width;
 		bool critical{ false };
 		bool friction{ false };
-		bool isDummy{ false };
+		bool dummy{ false };
 		FlickType flick{ FlickType::None };
 
 		int layer{ 0 };
@@ -109,6 +110,8 @@ namespace MikuMikuWorld
 
 		FadeType fadeType{ FadeType::Out };
 		GuideColor guideColor{ GuideColor::Green };
+
+		bool dummy;
 
 		constexpr bool isGuide() const
 		{
@@ -163,6 +166,7 @@ namespace MikuMikuWorld
 	int getFlickArrowSpriteIndex(const Note& note);
 	int getNoteSpriteIndex(const Note& note);
 	int getCcNoteSpriteIndex(const Note& note);
+	int getDummySpriteIndex(const Note& note);
 	int getFrictionSpriteIndex(const Note& note);
 	std::string_view getNoteSE(const Note& note, const Score& score);
 }

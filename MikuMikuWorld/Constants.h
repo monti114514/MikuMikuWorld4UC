@@ -27,11 +27,14 @@ namespace MikuMikuWorld
 	constexpr const char* HOLD_PATH_TEX = "longNoteLine";
 	constexpr const char* TOUCH_LINE_TEX = "touchLine_eff";
 	constexpr const char* GUIDE_COLORS_TEX = "guideColors";
+	constexpr const char* DUMMY_RED_CROSS = "notes3";
 	constexpr const char* APP_CONFIG_FILENAME = "app_config.json";
 	constexpr const char* IMGUI_CONFIG_FILENAME = "imgui_config.ini";
 
 	constexpr const char* SUS_EXTENSION = ".sus";
 	constexpr const char* USC_EXTENSION = ".usc";
+	constexpr const char* JSON_EXTENSION = ".json";
+	constexpr const char* GZ_JSON_EXTENSION = ".json.gz";
 	constexpr const char* MMWS_EXTENSION = ".mmws";
 	constexpr const char* CC_MMWS_EXTENSION = ".ccmmws";
 	constexpr const char* UC_MMWS_EXTENSION = ".unchmmws";
