@@ -955,14 +955,15 @@ namespace MikuMikuWorld
 
 		ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetWorkCenter(), ImGuiCond_Always,
 		                        ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(450, 250), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(500, 350), ImGuiCond_Appearing);
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL, ImGuiWindowFlags_NoResize))
+		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL,
+		                           ImGuiWindowFlags_NoResize))
 		{
 			ImGui::Text(APP_NAME "\n"
 			                     "This application is based on MikuMikuWorld for Chart Cyanvas\n"
 			                     "Copyright (c) 2023 Nanashi. (@sevenc-nanashi)\n\n"
-			                     "\n\nWhich was based on MikuMikuWorld.\n"
+			                     "Which was based on MikuMikuWorld.\n"
 			                     "Copyright (C) 2022 Crash5b\n\n");
 			ImGui::Separator();
 

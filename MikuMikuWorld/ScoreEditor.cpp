@@ -68,7 +68,6 @@ namespace MikuMikuWorld
 
 	void ScoreEditor::fetchUpdate()
 	{
-		return; // TODO Point this to our own repo
 		std::wstring updateFlagPath =
 		    IO::mbToWideStr(Application::getAppDir() + "latest_version.txt");
 		bool shouldFetchUpdate = true;
@@ -97,10 +96,10 @@ namespace MikuMikuWorld
 			httplib::Client client("https://api.github.com");
 
 			std::cout << "Fetching new update" << std::endl;
-			auto res = client.Get("/repos/sevenc-nanashi/MikuMikuWorld4cc/releases/latest");
+			auto res = client.Get("/repos/UntitledCharts/MikuMikuWorld4UC/releases/latest");
 			if (!res)
 			{
-				std::cout << "Failed to fetch latest update: client.Get failed" << std::endl;
+				std::cerr << "Failed to fetch latest update: client.Get failed" << std::endl;
 				return;
 			}
 			std::cout << "Status: " << res->status << std::endl;
