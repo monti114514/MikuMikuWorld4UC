@@ -19,6 +19,9 @@ namespace MikuMikuWorld
 		Vector2 operator-(const Vector2& v) { return Vector2(x - v.x, y - v.y); }
 
 		Vector2 operator*(const Vector2& v) { return Vector2(x * v.x, y * v.y); }
+
+		inline Vector2(const ImVec2& vec) : x(vec.x), y(vec.y) {}
+		inline operator ImVec2() const { return { x, y }; }
 	};
 
 	struct Color
@@ -85,7 +88,7 @@ namespace MikuMikuWorld
 
 	template <typename FloatType>
 	static bool isClose(FloatType val, FloatType tgr,
-	             FloatType epsilon = std::numeric_limits<FloatType>::epsilon())
+	                    FloatType epsilon = std::numeric_limits<FloatType>::epsilon())
 	{
 		if (val == tgr)
 			return true;
@@ -105,6 +108,9 @@ namespace MikuMikuWorld
 	bool isWithinRange(float x, float left, float right);
 
 	std::function<float(float, float, float)> getEaseFunction(EaseType ease);
+
+	std::tuple<Vector2, Vector2, Vector2> convertToBezier(const Vector2& p1, const Vector2 p2,
+	                                                      EaseType ease);
 
 	uint32_t gcf(uint32_t a, uint32_t b);
 }

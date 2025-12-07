@@ -1,4 +1,2 @@
 #Dummy cross mark
-0,0,64,64
-#Dummy stripe for slide
-64,0,64,64
+0,0,128,128

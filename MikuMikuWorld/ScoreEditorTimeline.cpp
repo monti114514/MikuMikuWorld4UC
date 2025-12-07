@@ -534,10 +534,8 @@ namespace MikuMikuWorld
 			}
 			for (const auto& [id, hsc] : context.score.hiSpeedChanges)
 			{
-				float lx =
-				    laneToPosition(MAX_LANE + context.workingData.laneExtension + 1) + 123;
-				float rx =
-				    laneToPosition(MAX_LANE + context.workingData.laneExtension + 1) + 180;
+				float lx = laneToPosition(MAX_LANE + context.workingData.laneExtension + 1) + 123;
+				float rx = laneToPosition(MAX_LANE + context.workingData.laneExtension + 1) + 180;
 				float y = -tickToPosition(hsc.tick);
 
 				if (right > lx && left < rx &&
@@ -1871,18 +1869,6 @@ namespace MikuMikuWorld
 
 		const Sprite& spr = pathTex.sprites[sprIndex];
 
-		const Texture& dummyTex = ResourceManager::textures[noteTextures.dummyNotes];
-		bool canDrawDummy = isDummy && isArrayIndexInBounds(1, dummyTex.sprites);
-		float sx1, sx2, sy1, sy2;
-		if (canDrawDummy)
-		{
-			const Sprite& crossSprite = dummyTex.sprites[1];
-			sx1 = crossSprite.getX();
-			sx2 = crossSprite.getX() + crossSprite.getWidth();
-			sy1 = crossSprite.getY();
-			sy2 = crossSprite.getY() + crossSprite.getHeight();
-		}
-
 		float startX1 = laneToPosition(n1.lane + offsetLane);
 		float startX2 = laneToPosition(n1.lane + n1.width + offsetLane);
 		float startY = getNoteYPosFromTick(n1.tick + offsetTick);
@@ -1948,11 +1934,60 @@ namespace MikuMikuWorld
 			p4.x = xr2;
 			renderer->drawQuad(p1, p2, p3, p4, pathTex, right - holdSliceWidth, right, spr.getY(),
 			                   spr.getY() + spr.getHeight(), localTint);
-			if (canDrawDummy)
+		}
+
+		ImDrawList* drawList;
+		if (isDummy && (drawList = ImGui::GetWindowDrawList()) && std::abs(endY - startY) > 3)
+		{
+			const ImU32 outlineCol = IM_COL32(255, 35, 87, 255);
+			const float outlineWidth = 6.f;
+			const float outlineOffset = -1.f;
+
+			Vector2 topLeft =
+			    ImVec2{ startX1 + outlineOffset, size.y - startY + position.y } + position;
+			Vector2 topRight =
+			    ImVec2{ startX2 - outlineOffset, size.y - startY + position.y } + position;
+			Vector2 bottomLeft =
+			    ImVec2{ endX1 + outlineOffset, size.y - endY + position.y } + position;
+			Vector2 bottomRight =
+			    ImVec2{ endX2 - outlineOffset, size.y - endY + position.y } + position;
+			auto easeFunc = getEaseFunction(ease);
+			Vector2 centerLeft = { midpoint(topLeft.x, bottomLeft.x),
+				                   midpoint(topLeft.y, bottomLeft.y) };
+			Vector2 centerRight = { midpoint(topRight.x, bottomRight.x),
+				                    midpoint(topRight.y, bottomRight.y) };
+			auto drawBezier = [&](const Vector2& start, const Vector2& end, EaseType ease)
 			{
-				renderer->drawQuad({ xl1, y1 }, { xr1, y1 }, { xl2, y2 }, { xr2, y2 }, dummyTex,
-				                   sx1, sx2, lerp(sy1, sy2, percent1), lerp(sy1, sy2, percent2),
-				                   localTint);
+				auto&& [p1, p2, p3] = convertToBezier(start, end, ease);
+				drawList->AddBezierQuadratic(p1, p2, p3, outlineCol, outlineWidth);
+			};
+			switch (ease)
+			{
+			case EaseType::EaseIn:
+				drawBezier(topLeft, bottomLeft, EaseType::EaseIn);
+				drawBezier(topRight, bottomRight, EaseType::EaseIn);
+				break;
+			case EaseType::EaseOut:
+				drawBezier(topLeft, bottomLeft, EaseType::EaseOut);
+				drawBezier(topRight, bottomRight, EaseType::EaseOut);
+				break;
+			case EaseType::EaseInOut:
+				drawBezier(topLeft, centerLeft, EaseType::EaseIn);
+				drawBezier(centerLeft, bottomLeft, EaseType::EaseOut);
+				drawBezier(topRight, centerRight, EaseType::EaseIn);
+				drawBezier(centerRight, bottomRight, EaseType::EaseOut);
+				break;
+			case EaseType::EaseOutIn:
+				drawBezier(topLeft, centerLeft, EaseType::EaseOut);
+				drawBezier(centerLeft, bottomLeft, EaseType::EaseIn);
+				drawBezier(topRight, centerRight, EaseType::EaseOut);
+				drawBezier(centerRight, bottomRight, EaseType::EaseIn);
+				break;
+			default:
+			case EaseType::Linear:
+				drawBezier(topLeft, bottomLeft, EaseType::Linear);
+				drawBezier(topRight, bottomRight, EaseType::Linear);
+				break;
 			}
 		}
 	}
@@ -2318,9 +2353,9 @@ namespace MikuMikuWorld
 		pos.x = midpoint(x1, x2);
 		pos.y = getNoteYPosFromTick(note.tick + offsetTick);
 
-		Vector2 size{ std::max(std::min(laneWidth * note.width / 2, laneWidth * 3.f),
-			                   laneWidth * 0.5f),
-			          notesHeight * 2 / 3 };
+		float width = std::max(std::min(laneWidth * note.width * 3 / 4, laneWidth * 1.25f),
+		                       notesHeight * 0.5f);
+		Vector2 size{ width, width };
 
 		const int z = (selectedLayer ? (int)ZIndex::zCount : 0) + (int)ZIndex::Note + 1;
 
