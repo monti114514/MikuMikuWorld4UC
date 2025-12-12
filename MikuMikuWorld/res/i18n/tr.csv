@@ -140,6 +140,9 @@ repeat_hold_mids, Basili Tutma Ortalarini Tekrarla
 #- hold_to_traces,
 #- add_traces_for_hold,
 #- convert_hold_to_traces,
+#- convert_guide_hold,
+#- convert_guide_to_hold,
+#- convert_hold_to_guide,
 lerp_hispeeds, Hi-Speed'leri Arastir
 step_type, Basili Tutma Türü
 ease_type, Yavaslama Türü

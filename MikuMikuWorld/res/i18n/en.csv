@@ -140,6 +140,9 @@ repeat_hold_mids,Repeat Hold Mids
 hold_to_traces,Convert Hold to Traces
 add_traces_for_hold,Add Traces for Hold
 convert_hold_to_traces,Convert Hold to Traces
+convert_guide_hold,Convert Hold-Guide
+convert_guide_to_hold,Convert Guide to Hold
+convert_hold_to_guide,Convert Hold to Guide
 lerp_hispeeds,Interpolate Hi-Speeds
 step_type,Hold Mid Type
 ease_type,Ease Type

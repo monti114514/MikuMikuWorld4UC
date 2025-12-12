@@ -140,6 +140,9 @@ repeat_hold_mids, Repetir holds (meio)
 hold_to_traces, Hold para trace
 add_traces_for_hold, Adicionar traces para hold
 convert_hold_to_traces, Converter hold para traces
+#- convert_guide_hold,
+#- convert_guide_to_hold,
+#- convert_hold_to_guide,
 lerp_hispeeds, Interpolar Hi-speeds
 step_type, Tipo de step
 ease_type, Tipo de curva

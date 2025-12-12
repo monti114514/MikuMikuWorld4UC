@@ -140,6 +140,9 @@ repeat_hold_mids,Lặp Hold Mids
 hold_to_traces,Chuyển Hold thành Trace
 add_traces_for_hold,Thêm Trace vào Hold
 convert_hold_to_traces,Chuyển đổi Hold
+#- convert_guide_hold,
+#- convert_guide_to_hold,
+#- convert_hold_to_guide,
 lerp_hispeeds,Ước tính Hi-Speeds
 step_type,Loại Step
 ease_type,Loại Ease
