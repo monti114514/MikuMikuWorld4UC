@@ -17,7 +17,7 @@ namespace MikuMikuWorld
 	// Version 6: Use floating type for lane and width
 	const int CC_MMWS_VERSION = 6;
 	const char* CC_MMWS_SIGNATURE = "CCMMWS";
-	// Version 1: Revert version to int32, support dummy note
+	// Version 1: Revert version to int32, support dummy note, dummy hold
 	const int UC_MMWS_VERSION = 1;
 	const char* UC_MMWS_SIGNATURE = "UCMMWS";
 
@@ -32,7 +32,8 @@ namespace MikuMikuWorld
 	{
 		HOLD_START_HIDDEN = 1 << 0,
 		HOLD_END_HIDDEN = 1 << 1,
-		HOLD_GUIDE = 1 << 2
+		HOLD_GUIDE = 1 << 2,
+		HOLD_DUMMY = 1 << 3
 	};
 
 	struct NativeScoreSerializer::ScoreVersion
@@ -60,6 +61,12 @@ namespace MikuMikuWorld
 		inline bool supportWaypoints() const { return cyanvasVersion >= 5; }
 		inline bool supportFloatingLaneWidth() const { return cyanvasVersion >= 6; }
 		inline bool supportDummyNote() const { return cyanvasVersion >= 6 && untitledVersion >= 1; }
+
+		inline bool isSupportedVersion() const
+		{
+			return version <= MMWS_VERSION || cyanvasVersion <= CC_MMWS_VERSION ||
+			       untitledVersion <= UC_MMWS_VERSION;
+		}
 	};
 
 	Note NativeScoreSerializer::readNote(NoteType type, IO::BinaryReader& reader,
@@ -256,6 +263,9 @@ namespace MikuMikuWorld
 		                           ? ScoreVersion(0, std::max((int)reader.readUInt16(), 1), (int)reader.readUInt16())
 		                           : ScoreVersion(0, 0, reader.readUInt32());
 
+		if (!version.isSupportedVersion())
+			throw std::runtime_error("Cannot open this file. The file was created in a newer version");
+
 		uint32_t metadataAddress{};
 		uint32_t eventsAddress{};
 		uint32_t tapsAddress{};
@@ -319,6 +329,9 @@ namespace MikuMikuWorld
 
 			if (flags & HOLD_GUIDE)
 				hold.startType = hold.endType = HoldNoteType::Guide;
+
+			if (flags & HOLD_DUMMY)
+				hold.dummy = true;
 
 			Note start = readNote(NoteType::Hold, reader, version);
 			start.ID = Note::getNextID();
@@ -464,6 +477,8 @@ namespace MikuMikuWorld
 				flags |= HOLD_START_HIDDEN;
 			if (hold.endType == HoldNoteType::Hidden)
 				flags |= HOLD_END_HIDDEN;
+			if (hold.dummy)
+				flags |= HOLD_DUMMY;
 			writer.writeInt32(flags);
 
 			// note data
