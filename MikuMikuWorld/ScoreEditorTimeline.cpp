@@ -2597,11 +2597,13 @@ namespace MikuMikuWorld
 		bool implicitLayerName = layer == -1 || context.selectedLayer == layer;
 		bool innerLayerOffset = implicitLayerName || context.showAllLayers;
 		std::string txt;
+		
 		if (ease == HiSpeedEaseType::Linear)
 			txt += "^";
-		txt += IO::formatString("%.2fx", speed);
+		txt += IO::formatFixedFloatTrimmed(speed).c_str();
+		txt += "x";
 		if (!isClose(skip, 0.0f, FLT_EPSILON * 1000))
-			txt += IO::formatString("%+.2f", skip);
+			txt += IO::formatFixedFloatTrimmed(skip, 7, "%+.*f");
 		if (!implicitLayerName)
 			txt += IO::formatString(" (%s)", context.score.layers[layer].name.c_str());
 		float dpiScale = ImGui::GetMainViewport()->DpiScale;
@@ -2758,7 +2760,7 @@ namespace MikuMikuWorld
 				    UI::addSelectProperty(fitColumn(getString("hi_speed_ease")), eventEdit.editHiSpeedEase,
 				                          hiSpeedEaseNames, arrayLength(hiSpeedEaseNames));
 				UI::addFloatProperty(fitColumn(getString("hi_speed_skip_beat")), eventEdit.editHiSpeedSkip,
-				                     IO::formatString("%%+g %s", getString("beat")).c_str());
+				                     IO::formatString("%%g %s", getString("beat")).c_str());
 				eventEdited |= ImGui::IsItemDeactivatedAfterEdit();
 				UI::addCheckboxProperty(fitColumn(getString("hi_speed_hide_notes")),
 				                        eventEdit.editHiSpeedHideNote);
