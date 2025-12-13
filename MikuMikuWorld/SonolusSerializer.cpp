@@ -220,8 +220,13 @@ namespace MikuMikuWorld
 		}
 
 		std::vector<size_t> lastSpeedIdx = groupEntIdx;
+		std::multimap<int, const HiSpeedChange*> orderedSpeedChange;
 		for (const auto& [_, speed] : score.hiSpeedChanges)
+			orderedSpeedChange.emplace(speed.tick, &speed);
+
+		for (const auto& [_, speedPtr] : orderedSpeedChange)
 		{
+			const HiSpeedChange& speed = *speedPtr;
 			size_t newSpeedIdx = levelData.entities.size();
 			auto& newSpeedEnt = levelData.entities.emplace_back(
 			    toTimeScaleEntity(speed, getEnityName(groupEntIdx[speed.layer])));
