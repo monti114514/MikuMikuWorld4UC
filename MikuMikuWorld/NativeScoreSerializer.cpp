@@ -18,7 +18,8 @@ namespace MikuMikuWorld
 	const int CC_MMWS_VERSION = 6;
 	const char* CC_MMWS_SIGNATURE = "CCMMWS";
 	// Version 1: Revert version to int32, support dummy note, dummy hold
-	const int UC_MMWS_VERSION = 1;
+	// Version 2: Support hispeed easing, skip
+	const int UC_MMWS_VERSION = 2;
 	const char* UC_MMWS_SIGNATURE = "UCMMWS";
 
 	enum NoteFlags
@@ -61,6 +62,7 @@ namespace MikuMikuWorld
 		inline bool supportWaypoints() const { return cyanvasVersion >= 5; }
 		inline bool supportFloatingLaneWidth() const { return cyanvasVersion >= 6; }
 		inline bool supportDummyNote() const { return cyanvasVersion >= 6 && untitledVersion >= 1; }
+		inline bool supportHispeedSkipEase() const { return untitledVersion >= 2; }
 
 		inline bool isSupportedVersion() const
 		{
@@ -190,8 +192,10 @@ namespace MikuMikuWorld
 				int tick = reader.readUInt32();
 				float speed = reader.readSingle();
 				int layer = version.supportLayers() ? reader.readUInt32() : 0;
+				float skip = version.supportHispeedSkipEase() ? reader.readSingle() : 0;
+				HiSpeedEaseType ease = static_cast<HiSpeedEaseType>(version.supportHispeedSkipEase() ? reader.readInt32() : 0);
 				id_t id = getNextHiSpeedID();
-				score.hiSpeedChanges[id] = HiSpeedChange{ id, tick, speed, layer };
+				score.hiSpeedChanges[id] = HiSpeedChange{ id, tick, speed, layer, skip, ease };
 			}
 		}
 
@@ -234,6 +238,8 @@ namespace MikuMikuWorld
 			writer.writeInt32(hiSpeed.tick);
 			writer.writeSingle(hiSpeed.speed);
 			writer.writeInt32(hiSpeed.layer);
+			writer.writeSingle(hiSpeed.skips);
+			writer.writeInt32(static_cast<int>(hiSpeed.ease));
 		}
 
 		writer.writeInt32(score.skills.size());

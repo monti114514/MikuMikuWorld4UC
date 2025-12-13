@@ -198,6 +198,11 @@ decrease_note_size, Disminuir ancho de la nota
 hi_speed, Hi-speed
 edit_hi_speed, Editar Hi-speed
 hi_speed_speed, Velocidad
+#- hi_speed_skip_beat,
+#- hi_speed_ease,
+#- hi_speed_ease_none,
+#- hi_speed_ease_linear,
+#- hi_speed_hide_notes,
 fade_none, Sin desvanecimiento
 fade_in, Aparecer (adentro)
 fade_out, Desvanecer (afuera)

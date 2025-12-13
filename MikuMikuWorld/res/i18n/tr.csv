@@ -196,6 +196,11 @@ decrease_note_size, Nota Boyutunu Azalt
 hi_speed, Hi-Speed
 edit_hi_speed, Hi-Speed Düzenle
 hi_speed_speed, Hiz
+#- hi_speed_skip_beat,
+#- hi_speed_ease,
+#- hi_speed_ease_none,
+#- hi_speed_ease_linear,
+#- hi_speed_hide_notes,
 fade_none, Solma Yok
 fade_in, Solmaya Basla
 fade_out, Solmayi Bitir

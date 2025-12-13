@@ -36,13 +36,16 @@ namespace MikuMikuWorld
 		std::string name;
 		int tick;
 	};
-
+	
 	struct HiSpeedChange
 	{
 		id_t ID;
 		int tick;
 		float speed;
 		int layer = 0;
+		float skips = 0;
+		HiSpeedEaseType ease;
+		bool hideNotes;
 	};
 
 	struct ScoreMetadata

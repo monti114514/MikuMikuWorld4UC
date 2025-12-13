@@ -93,4 +93,13 @@ namespace MikuMikuWorld
 	};
 
 	constexpr const char* fadeTypes[]{ "fade_out", "fade_none", "fade_in" };
+
+	enum class HiSpeedEaseType : uint8_t
+	{
+		None,
+		Linear,
+		EaseTypeCount
+	};
+
+	constexpr const char* hiSpeedEaseNames[] = { "hi_speed_ease_none", "hi_speed_ease_linear" };
 }

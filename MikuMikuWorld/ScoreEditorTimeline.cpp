@@ -534,8 +534,9 @@ namespace MikuMikuWorld
 			}
 			for (const auto& [id, hsc] : context.score.hiSpeedChanges)
 			{
-				float lx = laneToPosition(MAX_LANE + context.workingData.laneExtension + 1) + 123;
-				float rx = laneToPosition(MAX_LANE + context.workingData.laneExtension + 1) + 180;
+				float dpiScale = ImGui::GetMainViewport()->DpiScale;
+				float lx = getTimelineEndX(context) + 123 * dpiScale;
+				float rx = getTimelineEndX(context) + 180 * dpiScale;
 				float y = -tickToPosition(hsc.tick);
 
 				if (right > lx && left < rx &&
@@ -712,6 +713,9 @@ namespace MikuMikuWorld
 			{
 				eventEdit.editId = id;
 				eventEdit.editHiSpeed = hiSpeed.speed;
+				eventEdit.editHiSpeedEase = hiSpeed.ease;
+				eventEdit.editHiSpeedSkip = hiSpeed.skips;
+				eventEdit.editHiSpeedHideNote = hiSpeed.hideNotes;
 				eventEdit.type = EventType::HiSpeed;
 				ImGui::OpenPopup("edit_event");
 			}
@@ -1132,7 +1136,8 @@ namespace MikuMikuWorld
 			             context.pasteData.offsetLane);
 
 		for (const auto& [_, hsc] : context.pasteData.hiSpeedChanges)
-			hiSpeedControl(context, hsc.tick + hoverTick, hsc.speed, -1);
+			hiSpeedControl(context, hsc.tick + hoverTick, hsc.speed, -1, hsc.skips, hsc.ease,
+			               hsc.hideNotes);
 	}
 
 	void ScoreEditorTimeline::updateInputNotes(const ScoreContext& context, EditArgs& edit)
@@ -1224,8 +1229,13 @@ namespace MikuMikuWorld
 
 			Score prev = context.score;
 			id_t id = getNextHiSpeedID();
-			context.score.hiSpeedChanges[id] = { id, hoverTick, edit.hiSpeed,
-				                                 context.selectedLayer };
+			context.score.hiSpeedChanges[id] = { id,
+				                                 hoverTick,
+				                                 edit.hiSpeed,
+				                                 context.selectedLayer,
+				                                 edit.hiSpeedSkip,
+				                                 edit.hiSpeedEase,
+				                                 edit.hiSpeedHideNotes };
 			context.pushHistory("Insert hi-speed changes", prev, context.score);
 		}
 	}
@@ -1325,7 +1335,8 @@ namespace MikuMikuWorld
 			break;
 
 		case TimelineMode::InsertHiSpeed:
-			hiSpeedControl(context, hoverTick, edit.hiSpeed, -1);
+			hiSpeedControl(context, hoverTick, edit.hiSpeed, -1, edit.hiSpeedSkip, edit.hiSpeedEase,
+			               edit.hiSpeedHideNotes);
 			break;
 
 		case TimelineMode::InsertDamage:
@@ -1383,6 +1394,11 @@ namespace MikuMikuWorld
 	{
 		if (currentMode == mode)
 		{
+			if (mode == TimelineMode::InsertLong)
+			{
+				edit.easeType = EaseType((static_cast<int>(edit.easeType) + 1) %
+				                         static_cast<int>(EaseType::EaseTypeCount));
+			}
 			if (mode == TimelineMode::InsertLongMid)
 			{
 				edit.stepType =
@@ -2568,27 +2584,32 @@ namespace MikuMikuWorld
 	bool ScoreEditorTimeline::hiSpeedControl(const ScoreContext& context,
 	                                         const HiSpeedChange& hiSpeed)
 	{
-		return hiSpeedControl(context, hiSpeed.tick, hiSpeed.speed, hiSpeed.layer,
+		return hiSpeedControl(context, hiSpeed.tick, hiSpeed.speed, hiSpeed.layer, hiSpeed.skips,
+		                      hiSpeed.ease, hiSpeed.hideNotes,
 		                      context.selectedHiSpeedChanges.find(hiSpeed.ID) !=
 		                          context.selectedHiSpeedChanges.end());
 	}
 
 	bool ScoreEditorTimeline::hiSpeedControl(const ScoreContext& context, int tick, float speed,
-	                                         int layer, bool selected)
+	                                         int layer, float skip, HiSpeedEaseType ease,
+	                                         bool hideNotes, bool selected)
 	{
-		std::string txt =
-		    (layer == -1 || context.selectedLayer == layer)
-		        ? IO::formatString("%.2fx", speed)
-		        : IO::formatString("%.2fx (%s)", speed, context.score.layers[layer].name.c_str());
+		bool implicitLayerName = layer == -1 || context.selectedLayer == layer;
+		bool innerLayerOffset = implicitLayerName || context.showAllLayers;
+		std::string txt;
+		if (ease == HiSpeedEaseType::Linear)
+			txt += "^";
+		txt += IO::formatString("%.2fx", speed);
+		if (!isClose(skip, 0.0f, FLT_EPSILON * 1000))
+			txt += IO::formatString("%+.2f", skip);
+		if (!implicitLayerName)
+			txt += IO::formatString(" (%s)", context.score.layers[layer].name.c_str());
 		float dpiScale = ImGui::GetMainViewport()->DpiScale;
-		Vector2 pos{ getTimelineEndX(context) +
-			             (((layer == -1 || context.showAllLayers || context.selectedLayer == layer)
-			                   ? 123
-			                   : 180) *
-			              dpiScale),
+		Vector2 pos{ getTimelineEndX(context) + (innerLayerOffset ? 123 : 180) * dpiScale,
 			         position.y - tickToPosition(tick) + visualOffset };
-		bool enabled = layer == -1 || context.showAllLayers || context.selectedLayer == layer;
-		auto color = enabled ? speedColor : inactiveSpeedColor;
+		bool enabled = innerLayerOffset;
+		auto color = hideNotes ? (enabled ? hideSpeedColor : inactiveHideSpeedColor)
+		                       : (enabled ? speedColor : inactiveSpeedColor);
 
 		return eventControl(
 		    getTimelineEndX(context), pos,
@@ -2616,11 +2637,24 @@ namespace MikuMikuWorld
 
 	void ScoreEditorTimeline::eventEditor(ScoreContext& context)
 	{
-		ImGui::SetNextWindowSize(ImVec2(250, -1), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(300, -1), ImGuiCond_Always);
 		if (ImGui::BeginPopup("edit_event"))
 		{
 			std::string editLabel{ "edit_" };
 			editLabel.append(eventTypes[(int)eventEdit.type]);
+			const auto fitColumn = [appearing = ImGui::IsWindowAppearing(),
+			                        &style = ImGui::GetStyle()](const char* label)
+			{
+				if (!appearing)
+					return label;
+				float maxWidth = ImGui::GetColumnWidth(0);
+				float nextWidth =
+				    ImGui::CalcTextSize(label).x + ImGui::GetCursorPosX() + style.ItemSpacing.x;
+				if (nextWidth > maxWidth)
+					ImGui::SetColumnWidth(0, nextWidth);
+				return label;
+			};
+			float minimumColumnWidth = 30.f;
 			ImGui::Text(getString(editLabel));
 			ImGui::Separator();
 
@@ -2634,9 +2668,11 @@ namespace MikuMikuWorld
 				}
 
 				UI::beginPropertyColumns();
+				if (ImGui::IsWindowAppearing())
+					ImGui::SetColumnWidth(0, minimumColumnWidth);
 
 				Tempo& tempo = context.score.tempoChanges[eventEdit.editId];
-				UI::addFloatProperty(getString("bpm"), eventEdit.editBpm, "%g");
+				UI::addFloatProperty(fitColumn(getString("bpm")), eventEdit.editBpm, "%g");
 				if (ImGui::IsItemDeactivatedAfterEdit())
 				{
 					Score prev = context.score;
@@ -2671,6 +2707,9 @@ namespace MikuMikuWorld
 				}
 
 				UI::beginPropertyColumns();
+				if (ImGui::IsWindowAppearing())
+					ImGui::SetColumnWidth(0, minimumColumnWidth);
+				fitColumn(getString("time_signature"));
 				if (UI::timeSignatureSelect(eventEdit.editTimeSignatureNumerator,
 				                            eventEdit.editTimeSignatureDenominator))
 				{
@@ -2708,14 +2747,30 @@ namespace MikuMikuWorld
 					return;
 				}
 
+				bool eventEdited = false;
 				UI::beginPropertyColumns();
-				UI::addFloatProperty(getString("hi_speed_speed"), eventEdit.editHiSpeed, "%g");
+				if (ImGui::IsWindowAppearing())
+					ImGui::SetColumnWidth(0, minimumColumnWidth);
+				UI::addFloatProperty(fitColumn(getString("hi_speed_speed")), eventEdit.editHiSpeed,
+				                     "%g");
+				eventEdited |= ImGui::IsItemDeactivatedAfterEdit();
+				eventEdited |=
+				    UI::addSelectProperty(fitColumn(getString("hi_speed_ease")), eventEdit.editHiSpeedEase,
+				                          hiSpeedEaseNames, arrayLength(hiSpeedEaseNames));
+				UI::addFloatProperty(fitColumn(getString("hi_speed_skip_beat")), eventEdit.editHiSpeedSkip,
+				                     IO::formatString("%%+g %s", getString("beat")).c_str());
+				eventEdited |= ImGui::IsItemDeactivatedAfterEdit();
+				UI::addCheckboxProperty(fitColumn(getString("hi_speed_hide_notes")),
+				                        eventEdit.editHiSpeedHideNote);
+				eventEdited |= ImGui::IsItemDeactivatedAfterEdit();
 				HiSpeedChange& hiSpeed = context.score.hiSpeedChanges[eventEdit.editId];
-				if (ImGui::IsItemDeactivatedAfterEdit())
+				if (eventEdited)
 				{
 					Score prev = context.score;
 					hiSpeed.speed = eventEdit.editHiSpeed;
-
+					hiSpeed.skips = eventEdit.editHiSpeedSkip;
+					hiSpeed.ease = eventEdit.editHiSpeedEase;
+					hiSpeed.hideNotes = eventEdit.editHiSpeedHideNote;
 					context.pushHistory("Change hi-speed", prev, context.score);
 				}
 				UI::endPropertyColumns();
@@ -2739,7 +2794,9 @@ namespace MikuMikuWorld
 				}
 
 				UI::beginPropertyColumns();
-				UI::addStringProperty(getString("waypoint_name"), eventEdit.editName);
+				if (ImGui::IsWindowAppearing())
+					ImGui::SetColumnWidth(0, minimumColumnWidth);
+				UI::addStringProperty(fitColumn(getString("waypoint_name")), eventEdit.editName);
 				Waypoint& waypoint = context.score.waypoints[eventEdit.editId];
 				if (ImGui::IsItemDeactivatedAfterEdit())
 				{

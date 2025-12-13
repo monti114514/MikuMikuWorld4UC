@@ -583,10 +583,10 @@ namespace MikuMikuWorld
 		return { "#TIMESCALE_CHANGE",
 			     { { "#BEAT", ticksToBeats(hispeed.tick) },
 			       { "#TIMESCALE", roundOff(hispeed.speed) },
-			       { "#TIMESCALE_SKIP", RealType(0) },
-			       { "#TIMESCALE_EASE", 0 },
+			       { "#TIMESCALE_SKIP", hispeed.skips },
+			       { "#TIMESCALE_EASE", static_cast<int>(hispeed.ease) },
 			       { "#TIMESCALE_GROUP", groupName },
-			       { "hideNotes", 0 } } };
+			       { "hideNotes", static_cast<int>(hispeed.hideNotes) } } };
 	}
 
 	LevelDataEntity PySekaiEngine::toNoteEntity(const Note& note, const std::string& archetype,
@@ -867,8 +867,8 @@ namespace MikuMikuWorld
 			return false;
 		}
 		std::string groupName;
-		float beat, skip = 0;
-		int easing = 0, hideNotes = 0;
+		float beat;
+		int easing = 0;
 		if (!timescaleEntity.tryGetDataValue("#BEAT", beat))
 		{
 			PRINT_DEBUG("Missing #BEAT key on #TIMESCALE_CHANGE");
@@ -891,9 +891,18 @@ namespace MikuMikuWorld
 			            groupEntity.name.c_str(), groupName.c_str());
 			return false;
 		}
-		timescaleEntity.tryGetDataValue("#TIMESCALE_SKIP", skip);
-		timescaleEntity.tryGetDataValue("#TIMESCALE_EASE", easing);
-		return (easing != 0 || skip != 0) ? UNSUPPORTED_ENUM : true;
+		timescaleEntity.tryGetDataValue("#TIMESCALE_SKIP", hispeed.skips);
+		if (timescaleEntity.tryGetDataValue("#TIMESCALE_EASE", easing))
+		{
+			if (easing < 0 || easing >= static_cast<int>(HiSpeedEaseType::EaseTypeCount))
+			{
+				PRINT_DEBUG("Unknown ease type for hispeed!");
+				return false;
+			}
+			hispeed.ease = static_cast<HiSpeedEaseType>(easing);
+		}
+		timescaleEntity.tryGetDataValue("hideNotes", hispeed.hideNotes);
+		return true;
 	}
 
 	int PySekaiEngine::fromNoteEntity(const LevelDataEntity& noteEntity, Note& note,

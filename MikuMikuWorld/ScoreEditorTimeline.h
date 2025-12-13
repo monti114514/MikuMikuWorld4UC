@@ -212,6 +212,7 @@ namespace MikuMikuWorld
 		bool feverControl(const ScoreContext& context, int tick, bool start, bool enabled);
 		bool hiSpeedControl(const ScoreContext& context, const HiSpeedChange& hiSpeed);
 		bool hiSpeedControl(const ScoreContext& context, int tick, float speed, int layer,
+		                    float skip, HiSpeedEaseType ease, bool hideNotes,
 		                    bool selected = false);
 		bool waypointControl(const ScoreContext& context, const Waypoint& waypoint);
 		bool waypointControl(const ScoreContext& context, std::string name, int tick);
@@ -248,6 +249,9 @@ namespace MikuMikuWorld
 			int editTimeSignatureDenominator = 4;
 
 			float editHiSpeed = 1.0f;
+			float editHiSpeedSkip = 0.0f;
+			HiSpeedEaseType editHiSpeedEase = HiSpeedEaseType::None;
+			bool editHiSpeedHideNote = false;
 
 			std::string editName = "";
 		} eventEdit{};

@@ -196,6 +196,11 @@ decrease_note_size,Giảm kích cỡ note
 hi_speed,Hi-Speed
 edit_hi_speed,Chỉnh sửa Hi-Speed
 hi_speed_speed,Tốc độ
+#- hi_speed_skip_beat,
+#- hi_speed_ease,
+#- hi_speed_ease_none,
+#- hi_speed_ease_linear,
+#- hi_speed_hide_notes,
 fade_none,No Fade
 fade_in,Fade In
 fade_out,Fade Out

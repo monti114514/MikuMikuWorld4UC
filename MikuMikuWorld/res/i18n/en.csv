@@ -196,6 +196,11 @@ decrease_note_size,Decrease Note Size
 hi_speed,Hi-Speed
 edit_hi_speed,Edit Hi-Speed
 hi_speed_speed,Speed
+hi_speed_skip_beat,Skip
+hi_speed_ease,Ease
+hi_speed_ease_none,None
+hi_speed_ease_linear,Linear
+hi_speed_hide_notes,Hide notes
 fade_none,No Fade
 fade_in,Fade In
 fade_out,Fade Out

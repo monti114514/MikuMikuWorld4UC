@@ -63,7 +63,7 @@ namespace jsonIO
 	                         const std::unordered_set<mmw::id_t>& selection,
 	                         const std::unordered_set<mmw::id_t>& hiSpeedSelection, int baseTick)
 	{
-		json data, notes, holds, damages, hiSpeedChanges;
+		json retData, notes, holds, damages, hiSpeedChanges;
 		std::unordered_set<mmw::id_t> selectedNotes;
 		std::unordered_set<mmw::id_t> selectedHolds;
 		std::unordered_set<mmw::id_t> selectedDamages;
@@ -114,9 +114,13 @@ namespace jsonIO
 		}
 		for (int id : hiSpeedSelection)
 		{
-			const mmw::HiSpeedChange& note = score.hiSpeedChanges.at(id);
-			data["tick"] = note.tick - baseTick;
-			data["speed"] = note.speed;
+			const mmw::HiSpeedChange& hispeed = score.hiSpeedChanges.at(id);
+			json data; 
+			data["tick"] = hispeed.tick - baseTick;
+			data["speed"] = hispeed.speed;
+			data["skip"] = hispeed.skips;
+			data["ease"] = hispeed.ease;
+			data["hideNotes"] = hispeed.hideNotes;
 
 			hiSpeedChanges.push_back(data);
 		}
@@ -158,10 +162,10 @@ namespace jsonIO
 			holds.push_back(holdData);
 		}
 
-		data["notes"] = notes;
-		data["holds"] = holds;
-		data["damages"] = damages;
-		data["hiSpeedChanges"] = hiSpeedChanges;
-		return data;
+		retData["notes"] = notes;
+		retData["holds"] = holds;
+		retData["damages"] = damages;
+		retData["hiSpeedChanges"] = hiSpeedChanges;
+		return retData;
 	}
 }
