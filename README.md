@@ -26,6 +26,8 @@ In addition to the original features of MikuMikuWorld, the following features ar
 - Repeat Hold Mids feature
 - Note Properties panel
 - Support for decimal note lane and width
+- More hispeed options
+- Add import/export to LevelData
 
 ## Translations
 
@@ -57,7 +59,4 @@ The latest version can be downloaded [here](https://github.com/UntitledCharts/Mi
 - Add new flick direction (down, down left, down right)
 - Adding alpha property to Guide (enabled by changing Fade Type to Custom)
 - Changing `HoldNote` class so you can insert more than ticks note into holds
-- Add timescale skip
-- Add timescale easing
-- Add import/export to LevelData
 - Translation
