@@ -366,6 +366,7 @@ namespace MikuMikuWorld
 		timeline.setPlaying(context, false);
 
 		context.score = {};
+		context.selectedLayer = 0;
 		context.workingData = {};
 		context.history.clear();
 		context.scoreStats.reset();
