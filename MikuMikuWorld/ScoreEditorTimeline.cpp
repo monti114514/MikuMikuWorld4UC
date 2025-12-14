@@ -2594,22 +2594,25 @@ namespace MikuMikuWorld
 	                                         int layer, float skip, HiSpeedEaseType ease,
 	                                         bool hideNotes, bool selected)
 	{
-		bool implicitLayerName = layer == -1 || context.selectedLayer == layer;
-		bool innerLayerOffset = implicitLayerName || context.showAllLayers;
-		std::string txt;
-		
-		if (ease == HiSpeedEaseType::Linear)
-			txt += "^";
-		txt += IO::formatFixedFloatTrimmed(speed).c_str();
-		txt += "x";
+		bool showLayerName = !(layer == -1 || context.selectedLayer == layer);
+		bool enabled = layer == -1 || context.selectedLayer == layer || context.showAllLayers;
+		std::string easeStr = ease == HiSpeedEaseType::Linear ? "^" : "";
+		std::string speedStr = IO::formatFixedFloatTrimmed(speed);
+		std::string skipStr;
 		if (!isClose(skip, 0.0f, FLT_EPSILON * 1000))
-			txt += IO::formatFixedFloatTrimmed(skip, 7, "%+.*f");
-		if (!implicitLayerName)
-			txt += IO::formatString(" (%s)", context.score.layers[layer].name.c_str());
-		float dpiScale = ImGui::GetMainViewport()->DpiScale;
-		Vector2 pos{ getTimelineEndX(context) + (innerLayerOffset ? 123 : 180) * dpiScale,
+			skipStr = IO::formatFixedFloatTrimmed(skip, 7, "%+.*f");
+		std::string layerStr;
+		if (showLayerName)
+		{
+			auto& layerName = context.score.layers[layer].name;
+			layerStr += " (";
+			layerStr += layerName.size() > 12 ? (layerName.substr(0, 12) + "..") : layerName;
+			layerStr += ")";
+		}
+		std::string txt = IO::formatString("%s%sx%s%s", easeStr, speedStr, skipStr, layerStr);
+		Vector2 pos{ getTimelineEndX(context) +
+			             (enabled ? 123 : 180) * ImGui::GetMainViewport()->DpiScale,
 			         position.y - tickToPosition(tick) + visualOffset };
-		bool enabled = innerLayerOffset;
 		auto color = hideNotes ? (enabled ? hideSpeedColor : inactiveHideSpeedColor)
 		                       : (enabled ? speedColor : inactiveSpeedColor);
 
@@ -2756,10 +2759,11 @@ namespace MikuMikuWorld
 				UI::addFloatProperty(fitColumn(getString("hi_speed_speed")), eventEdit.editHiSpeed,
 				                     "%g");
 				eventEdited |= ImGui::IsItemDeactivatedAfterEdit();
-				eventEdited |=
-				    UI::addSelectProperty(fitColumn(getString("hi_speed_ease")), eventEdit.editHiSpeedEase,
-				                          hiSpeedEaseNames, arrayLength(hiSpeedEaseNames));
-				UI::addFloatProperty(fitColumn(getString("hi_speed_skip_beat")), eventEdit.editHiSpeedSkip,
+				eventEdited |= UI::addSelectProperty(fitColumn(getString("hi_speed_ease")),
+				                                     eventEdit.editHiSpeedEase, hiSpeedEaseNames,
+				                                     arrayLength(hiSpeedEaseNames));
+				UI::addFloatProperty(fitColumn(getString("hi_speed_skip_beat")),
+				                     eventEdit.editHiSpeedSkip,
 				                     IO::formatString("%%g %s", getString("beat")).c_str());
 				eventEdited |= ImGui::IsItemDeactivatedAfterEdit();
 				UI::addCheckboxProperty(fitColumn(getString("hi_speed_hide_notes")),
