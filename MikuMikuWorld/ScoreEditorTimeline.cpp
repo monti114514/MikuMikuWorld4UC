@@ -709,6 +709,9 @@ namespace MikuMikuWorld
 		// Update hi-speed changes
 		for (auto& [id, hiSpeed] : context.score.hiSpeedChanges)
 		{
+			if (context.score.layers[hiSpeed.layer].hidden &&
+			    context.selectedLayer != hiSpeed.layer)
+				continue;
 			if (hiSpeedControl(context, hiSpeed))
 			{
 				eventEdit.editId = id;
