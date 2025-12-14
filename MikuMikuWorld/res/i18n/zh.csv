@@ -46,7 +46,7 @@ warn_unsaved,您的更改尚未保存
 save_changes,保存更改
 discard_changes,放弃更改
 update_available,有可用更新
-update_available_description,新版本已可用。是否立即下载？
+update_available_description,新版本%s已可用。是否立即下载？
 score_file,谱面文件
 error,错误
 error_load_score_file,加载谱面文件时出错
@@ -170,8 +170,8 @@ traces,轨迹
 total,总计
 combo,连击
 goto_measure,跳转到小节
-division,分割
-division_affix,分割词缀
+division,%d分割
+division_affix,%d分割词缀
 custom,自定义
 custom_division,自定义分割
 snap_mode,吸附模式
@@ -219,7 +219,7 @@ note_properties_hold_note,长按音符属性
 note_properties_guide,引导属性
 note_properties_not_selected,未选择属性
 note_properties_many_hold_notes,多个长按音符属性
-translated_by,翻译者
+translated_by,翻译者: %s
 zoom_tooltip,缩放提示
 
 # preset manager
