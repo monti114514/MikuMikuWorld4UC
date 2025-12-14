@@ -786,6 +786,12 @@ namespace MikuMikuWorld
 			return 1;
 		case FlickType::Right:
 			return 2;
+		case FlickType::Down:
+			return 3;
+		case FlickType::DownLeft:
+			return 4;
+		case FlickType::DownRight:
+			return 5;
 		default:
 			PRINT_DEBUG("Unknown FlickType");
 			[[fallthrough]];
@@ -1372,6 +1378,12 @@ namespace MikuMikuWorld
 			return FlickType::Left;
 		case 2:
 			return FlickType::Right;
+		case 3:
+			return FlickType::Down;
+		case 4:
+			return FlickType::DownLeft;
+		case 5:
+			return FlickType::DownRight;
 		default:
 			return FlickType::FlickTypeCount;
 		}

@@ -114,6 +114,9 @@ none, 無し
 default, 通常
 left, 左
 right, 右
+#- down,
+#- down_left,
+#- down_right,
 normal, 通常
 hidden, 不可視
 skip, 無視

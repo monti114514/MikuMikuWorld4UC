@@ -2336,21 +2336,27 @@ namespace MikuMikuWorld
 		pos.y += notesHeight * 0.7f; // Move the arrow up a bit
 
 		// Notes wider than 6 lanes also use flick arrow size 6
-		int sizeIndex = std::min((int)floor(note.width) - 1, 5);
+		int sizeIndex = std::min(std::max(note.width, 1.f) - 1, 5.f);
 		Vector2 size{ laneWidth * flickArrowWidths[sizeIndex],
 			          notesHeight * flickArrowHeights[sizeIndex] };
 
 		float sx1 = arrowS.getX();
 		float sx2 = arrowS.getX() + arrowS.getWidth();
-		if (note.flick == FlickType::Right)
+		if (note.flick == FlickType::Right || note.flick == FlickType::DownRight)
 		{
 			// Flip arrow to point to the right
-			sx1 = arrowS.getX() + arrowS.getWidth();
-			sx2 = arrowS.getX();
+			std::swap(sx1, sx2);
+		}
+		float sy1 = arrowS.getY();
+		float sy2 = arrowS.getY() + arrowS.getHeight();
+		if (note.flick >= FlickType::Down)
+		{
+			// Flip arrow to point to down
+			std::swap(sy1, sy2);
 		}
 
-		renderer->drawSprite(pos, 0.0f, size, AnchorType::MiddleCenter, tex, sx1, sx2,
-		                     arrowS.getY(), arrowS.getY() + arrowS.getHeight(), tint, 2);
+		renderer->drawSprite(pos, 0.0f, size, AnchorType::MiddleCenter, tex, sx1, sx2, sy1, sy2,
+		                     tint, 2);
 	}
 	void ScoreEditorTimeline::drawDummyCrossMark(const Note& note, Renderer* renderer,
 	                                             const Color& tint, const int offsetTick,

@@ -114,6 +114,9 @@ none,Không
 default,Thẳng
 left,Trái
 right,Phải
+#- down,
+#- down_left,
+#- down_right,
 normal,Bình thường
 hidden,Không
 skip,Gắn theo

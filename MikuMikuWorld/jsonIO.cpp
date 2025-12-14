@@ -20,15 +20,16 @@ namespace jsonIO
 
 		if (!note.hasEase())
 		{
-			std::string flickString = tryGetValue<std::string>(data, "flick", "none");
+			std::string flickString = tryGetValue<std::string>(data, "flick", mmw::flickTypes[0]);
 			std::transform(flickString.begin(), flickString.end(), flickString.begin(), ::tolower);
+			if (flickString == "up")
+				flickString = mmw::flickTypes[(int)mmw::FlickType::Default];
 
-			if (flickString == "up" || flickString == "default")
-				note.flick = mmw::FlickType::Default;
-			else if (flickString == "left")
-				note.flick = mmw::FlickType::Left;
-			else if (flickString == "right")
-				note.flick = mmw::FlickType::Right;
+			for (size_t i = 0; i < std::size(mmw::flickTypes); i++)
+			{
+				if (flickString == mmw::flickTypes[i])
+					note.flick = static_cast<mmw::FlickType>(i);
+			}
 		}
 
 		note.dummy = tryGetValue<bool>(data, "dummy", false);

@@ -114,6 +114,9 @@ none, Nenhum
 default, Padrão
 left, Esquerda
 right, Direita
+#- down,
+#- down_left,
+#- down_right,
 normal, Normal
 hidden, Escondido
 skip, Pular

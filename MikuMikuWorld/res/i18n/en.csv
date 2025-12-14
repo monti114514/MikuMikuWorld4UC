@@ -114,6 +114,9 @@ none,None
 default,Default
 left,Left
 right,Right
+down,Down
+down_left,Down Left
+down_right,Down Right
 normal,Normal
 hidden,Hidden
 skip,Skip

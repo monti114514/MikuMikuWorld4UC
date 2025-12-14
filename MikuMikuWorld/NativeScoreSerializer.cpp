@@ -18,7 +18,7 @@ namespace MikuMikuWorld
 	const int CC_MMWS_VERSION = 6;
 	const char* CC_MMWS_SIGNATURE = "CCMMWS";
 	// Version 1: Revert version to int32, support dummy note, dummy hold
-	// Version 2: Support hispeed easing, skip
+	// Version 2: Support hispeed easing, skip; down flicks
 	const int UC_MMWS_VERSION = 2;
 	const char* UC_MMWS_SIGNATURE = "UCMMWS";
 
@@ -63,6 +63,7 @@ namespace MikuMikuWorld
 		inline bool supportFloatingLaneWidth() const { return cyanvasVersion >= 6; }
 		inline bool supportDummyNote() const { return cyanvasVersion >= 6 && untitledVersion >= 1; }
 		inline bool supportHispeedSkipEase() const { return untitledVersion >= 2; }
+		inline bool supportDownFlick() const { return untitledVersion >= 2; }
 
 		inline bool isSupportedVersion() const
 		{
@@ -93,7 +94,11 @@ namespace MikuMikuWorld
 			note.layer = reader.readUInt32();
 
 		if (!note.hasEase())
+		{
 			note.flick = static_cast<FlickType>(reader.readUInt32());
+			if (note.flick >= FlickType::Down && !version.supportDownFlick())
+				note.flick = FlickType::Default;
+		}
 
 		unsigned int flags = reader.readUInt32();
 		note.critical = (bool)(flags & NOTE_CRITICAL);

@@ -114,6 +114,9 @@ none,없음
 default,기본
 left,왼쪽
 right,오른쪽
+#- down,
+#- down_left,
+#- down_right,
 normal,정상
 hidden,숨겨진
 skip,스킵

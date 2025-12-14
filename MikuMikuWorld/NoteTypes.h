@@ -18,10 +18,15 @@ namespace MikuMikuWorld
 		Default,
 		Left,
 		Right,
+		Down,
+		DownLeft,
+		DownRight,
 		FlickTypeCount
 	};
 
-	constexpr const char* flickTypes[]{ "none", "default", "left", "right" };
+	constexpr const char* flickTypes[]{
+		"none", "default", "left", "right", "down", "down_left", "down_right"
+	};
 
 	enum class HoldStepType : uint8_t
 	{

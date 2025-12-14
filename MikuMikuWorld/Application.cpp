@@ -332,6 +332,9 @@ namespace MikuMikuWorld
 		ResourceManager::loadTexture(texturesDir + "timeline_flick_default.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_flick_left.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_flick_right.png");
+		ResourceManager::loadTexture(texturesDir + "timeline_flick_down.png");
+		ResourceManager::loadTexture(texturesDir + "timeline_flick_down_left.png");
+		ResourceManager::loadTexture(texturesDir + "timeline_flick_down_right.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_critical.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_trace.png");
 		for (auto color : guideColors)

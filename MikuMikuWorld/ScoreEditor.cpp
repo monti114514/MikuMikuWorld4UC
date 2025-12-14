@@ -29,7 +29,8 @@ namespace MikuMikuWorld
 		&config.input.timelineHiSpeed,
 	};
 
-	constexpr const char* toolbarFlickNames[] = { "none", "default", "left", "right" };
+	constexpr const char* toolbarFlickNames[] = { "none", "default",   "left",      "right",
+		                                          "down", "down_left", "down_right" };
 
 	constexpr const char* toolbarStepNames[] = { "normal", "hidden", "skip" };
 

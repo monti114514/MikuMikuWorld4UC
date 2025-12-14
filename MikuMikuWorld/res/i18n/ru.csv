@@ -116,6 +116,9 @@ none, Ничего
 default, По умолчанию
 left, Влево
 right, Вправо
+#- down,
+#- down_left,
+#- down_right,
 normal, Обычный
 hidden, Скрытый
 skip, Пропустить

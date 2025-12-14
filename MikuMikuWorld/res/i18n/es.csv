@@ -116,6 +116,9 @@ none, Ninguno
 default, Predeterminado
 left, Izquierda
 right, Derecha
+#- down,
+#- down_left,
+#- down_right,
 normal, Normal
 hidden, Escondido
 skip, Skip

@@ -114,6 +114,9 @@ none, Yok
 default, Varsayilan
 left, Sol
 right, Sag
+#- down,
+#- down_left,
+#- down_right,
 normal, Normal
 hidden, Gizli
 skip, Atlama
