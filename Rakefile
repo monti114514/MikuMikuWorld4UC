@@ -28,7 +28,22 @@ task "build:installer" do
     ].join(".")
   File.write("./installer.nsi", installer.gsub(/{version}/, version))
 
-  sh "makensis installer.nsi"
+  candidates = []
+  exts = ENV["PATHEXT"]&.split(";") || [""]
+  ENV["PATH"].to_s.split(File::PATH_SEPARATOR).each do |dir|
+    exts.each do |ext|
+      candidates << File.join(dir, "makensis#{ext}")
+    end
+  end
+
+  candidates << "C:/Program Files (x86)/NSIS/makensis.exe"
+  candidates << "C:/Program Files/NSIS/makensis.exe"
+
+  makensis = candidates.find { |p| File.file?(p) }
+
+  abort "makensis not found" unless makensis
+
+  sh %("#{makensis}" installer.nsi)
 end
 
 task "build:zip" do
