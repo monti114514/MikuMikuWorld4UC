@@ -12,6 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: true
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -26,22 +27,14 @@ jobs:
         run: |
           rake build
 
-      - name: Check version
+      - name: Compute version
         id: version
-        uses: actions/github-script@v7
-        with:
-          script: |
-            if ("${{ github.ref }}".split("/").pop().match(/^v\d+\.\d+\.\d+.\d+$/)) {
-              core.setOutput("prerelease", false);
-            } else {
-              core.setOutput("prerelease", true);
-            }
+        run: rake action:version
 
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
           prerelease: ${{ steps.version.outputs.prerelease }}
-          body: |
-            Download "-setup.exe".
+          body: ${{ steps.version.outputs.body }}
           files: |
             ./build/*.*
