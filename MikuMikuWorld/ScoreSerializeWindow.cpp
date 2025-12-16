@@ -346,6 +346,7 @@ namespace MikuMikuWorld
 			context.clearSelection();
 			context.history.clear();
 			context.score = std::move(controller->getScore());
+			context.selectedLayer = 0;
 			context.workingData =
 			    EditorScoreData(context.score.metadata, controller->getScoreFilename());
 

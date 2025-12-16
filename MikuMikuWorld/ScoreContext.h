@@ -27,6 +27,9 @@ namespace MikuMikuWorld
 		int timeSignatureNumerator{ 4 };
 		int timeSignatureDenominator{ 4 };
 		float hiSpeed{ 1.0f };
+		float hiSpeedSkip{ 0.0f };
+		HiSpeedEaseType hiSpeedEase{ HiSpeedEaseType::None };
+		bool hiSpeedHideNotes{ false };
 	};
 
 	class EditorScoreData

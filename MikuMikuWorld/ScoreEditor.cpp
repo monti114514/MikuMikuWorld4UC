@@ -29,7 +29,8 @@ namespace MikuMikuWorld
 		&config.input.timelineHiSpeed,
 	};
 
-	constexpr const char* toolbarFlickNames[] = { "none", "default", "left", "right" };
+	constexpr const char* toolbarFlickNames[] = { "none", "default",   "left",      "right",
+		                                          "down", "down_left", "down_right" };
 
 	constexpr const char* toolbarStepNames[] = { "normal", "hidden", "skip" };
 
@@ -75,9 +76,9 @@ namespace MikuMikuWorld
 		if (IO::File::exists(updateFlagPath))
 		{
 			auto file = IO::File(updateFlagPath, IO::FileMode::Read);
-			auto lastWriteTime = std::chrono::system_clock::time_point(
-			    std::filesystem::last_write_time(updateFlagPath).time_since_epoch());
-			auto now = std::chrono::system_clock::now();
+			using fs_time_t = std::filesystem::file_time_type;
+			auto lastWriteTime = std::filesystem::last_write_time(updateFlagPath);
+			auto now = fs_time_t::clock::now();
 			auto diff =
 			    std::chrono::duration_cast<std::chrono::minutes>(now - lastWriteTime).count();
 			std::cout << "Last update check: " << diff << " minutes ago" << std::endl;
@@ -366,6 +367,7 @@ namespace MikuMikuWorld
 		timeline.setPlaying(context, false);
 
 		context.score = {};
+		context.selectedLayer = 0;
 		context.workingData = {};
 		context.history.clear();
 		context.scoreStats.reset();

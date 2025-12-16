@@ -368,3 +368,4 @@ build
 installer.nsi
 # VSCode settings
 .vscode/
+.update-changelog

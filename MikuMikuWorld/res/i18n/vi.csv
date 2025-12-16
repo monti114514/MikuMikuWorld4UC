@@ -114,6 +114,9 @@ none,Không
 default,Thẳng
 left,Trái
 right,Phải
+#- down,
+#- down_left,
+#- down_right,
 normal,Bình thường
 hidden,Không
 skip,Gắn theo
@@ -140,6 +143,9 @@ repeat_hold_mids,Lặp Hold Mids
 hold_to_traces,Chuyển Hold thành Trace
 add_traces_for_hold,Thêm Trace vào Hold
 convert_hold_to_traces,Chuyển đổi Hold
+#- convert_guide_hold,
+#- convert_guide_to_hold,
+#- convert_hold_to_guide,
 lerp_hispeeds,Ước tính Hi-Speeds
 step_type,Loại Step
 ease_type,Loại Ease
@@ -193,6 +199,11 @@ decrease_note_size,Giảm kích cỡ note
 hi_speed,Hi-Speed
 edit_hi_speed,Chỉnh sửa Hi-Speed
 hi_speed_speed,Tốc độ
+#- hi_speed_skip_beat,
+#- hi_speed_ease,
+#- hi_speed_ease_none,
+#- hi_speed_ease_linear,
+#- hi_speed_hide_notes,
 fade_none,No Fade
 fade_in,Fade In
 fade_out,Fade Out

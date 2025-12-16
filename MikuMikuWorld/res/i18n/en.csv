@@ -114,6 +114,9 @@ none,None
 default,Default
 left,Left
 right,Right
+down,Down
+down_left,Down Left
+down_right,Down Right
 normal,Normal
 hidden,Hidden
 skip,Skip
@@ -140,6 +143,9 @@ repeat_hold_mids,Repeat Hold Mids
 hold_to_traces,Convert Hold to Traces
 add_traces_for_hold,Add Traces for Hold
 convert_hold_to_traces,Convert Hold to Traces
+convert_guide_hold,Convert Hold-Guide
+convert_guide_to_hold,Convert Guide to Hold
+convert_hold_to_guide,Convert Hold to Guide
 lerp_hispeeds,Interpolate Hi-Speeds
 step_type,Hold Mid Type
 ease_type,Ease Type
@@ -193,6 +199,11 @@ decrease_note_size,Decrease Note Size
 hi_speed,Hi-Speed
 edit_hi_speed,Edit Hi-Speed
 hi_speed_speed,Speed
+hi_speed_skip_beat,Skip
+hi_speed_ease,Ease
+hi_speed_ease_none,None
+hi_speed_ease_linear,Linear
+hi_speed_hide_notes,Hide notes
 fade_none,No Fade
 fade_in,Fade In
 fade_out,Fade Out

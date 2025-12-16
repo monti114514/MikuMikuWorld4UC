@@ -20,15 +20,16 @@ namespace jsonIO
 
 		if (!note.hasEase())
 		{
-			std::string flickString = tryGetValue<std::string>(data, "flick", "none");
+			std::string flickString = tryGetValue<std::string>(data, "flick", mmw::flickTypes[0]);
 			std::transform(flickString.begin(), flickString.end(), flickString.begin(), ::tolower);
+			if (flickString == "up")
+				flickString = mmw::flickTypes[(int)mmw::FlickType::Default];
 
-			if (flickString == "up" || flickString == "default")
-				note.flick = mmw::FlickType::Default;
-			else if (flickString == "left")
-				note.flick = mmw::FlickType::Left;
-			else if (flickString == "right")
-				note.flick = mmw::FlickType::Right;
+			for (size_t i = 0; i < std::size(mmw::flickTypes); i++)
+			{
+				if (flickString == mmw::flickTypes[i])
+					note.flick = static_cast<mmw::FlickType>(i);
+			}
 		}
 
 		note.dummy = tryGetValue<bool>(data, "dummy", false);
@@ -63,7 +64,7 @@ namespace jsonIO
 	                         const std::unordered_set<mmw::id_t>& selection,
 	                         const std::unordered_set<mmw::id_t>& hiSpeedSelection, int baseTick)
 	{
-		json data, notes, holds, damages, hiSpeedChanges;
+		json retData, notes, holds, damages, hiSpeedChanges;
 		std::unordered_set<mmw::id_t> selectedNotes;
 		std::unordered_set<mmw::id_t> selectedHolds;
 		std::unordered_set<mmw::id_t> selectedDamages;
@@ -114,9 +115,13 @@ namespace jsonIO
 		}
 		for (int id : hiSpeedSelection)
 		{
-			const mmw::HiSpeedChange& note = score.hiSpeedChanges.at(id);
-			data["tick"] = note.tick - baseTick;
-			data["speed"] = note.speed;
+			const mmw::HiSpeedChange& hispeed = score.hiSpeedChanges.at(id);
+			json data; 
+			data["tick"] = hispeed.tick - baseTick;
+			data["speed"] = hispeed.speed;
+			data["skip"] = hispeed.skips;
+			data["ease"] = hispeed.ease;
+			data["hideNotes"] = hispeed.hideNotes;
 
 			hiSpeedChanges.push_back(data);
 		}
@@ -158,10 +163,10 @@ namespace jsonIO
 			holds.push_back(holdData);
 		}
 
-		data["notes"] = notes;
-		data["holds"] = holds;
-		data["damages"] = damages;
-		data["hiSpeedChanges"] = hiSpeedChanges;
-		return data;
+		retData["notes"] = notes;
+		retData["holds"] = holds;
+		retData["damages"] = damages;
+		retData["hiSpeedChanges"] = hiSpeedChanges;
+		return retData;
 	}
 }

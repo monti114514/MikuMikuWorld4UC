@@ -114,6 +114,9 @@ none,없음
 default,기본
 left,왼쪽
 right,오른쪽
+#- down,
+#- down_left,
+#- down_right,
 normal,정상
 hidden,숨겨진
 skip,스킵
@@ -140,6 +143,9 @@ repeat_hold_mids,중간 홀드 반복
 #- hold_to_traces,
 #- add_traces_for_hold,
 #- convert_hold_to_traces,
+#- convert_guide_hold,
+#- convert_guide_to_hold,
+#- convert_hold_to_guide,
 lerp_hispeeds,보간 고속
 step_type,중간 홀드 유형
 ease_type,용이성 유형
@@ -193,6 +199,11 @@ decrease_note_size,노트 크기 줄이기
 hi_speed,Hi-Speed
 edit_hi_speed,Hi-Speed편집하다
 hi_speed_speed,Hi-Speed속도
+#- hi_speed_skip_beat,
+#- hi_speed_ease,
+#- hi_speed_ease_none,
+#- hi_speed_ease_linear,
+#- hi_speed_hide_notes,
 fade_none,페이드 - 없음
 fade_in,페이드 - 안쪽
 fade_out,페이드 - 바깥쪽으로

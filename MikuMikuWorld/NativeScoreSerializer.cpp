@@ -17,8 +17,9 @@ namespace MikuMikuWorld
 	// Version 6: Use floating type for lane and width
 	const int CC_MMWS_VERSION = 6;
 	const char* CC_MMWS_SIGNATURE = "CCMMWS";
-	// Version 1: Revert version to int32, support dummy note
-	const int UC_MMWS_VERSION = 1;
+	// Version 1: Revert version to int32, support dummy note, dummy hold
+	// Version 2: Support hispeed easing, skip; down flicks
+	const int UC_MMWS_VERSION = 2;
 	const char* UC_MMWS_SIGNATURE = "UCMMWS";
 
 	enum NoteFlags
@@ -32,7 +33,8 @@ namespace MikuMikuWorld
 	{
 		HOLD_START_HIDDEN = 1 << 0,
 		HOLD_END_HIDDEN = 1 << 1,
-		HOLD_GUIDE = 1 << 2
+		HOLD_GUIDE = 1 << 2,
+		HOLD_DUMMY = 1 << 3
 	};
 
 	struct NativeScoreSerializer::ScoreVersion
@@ -60,6 +62,14 @@ namespace MikuMikuWorld
 		inline bool supportWaypoints() const { return cyanvasVersion >= 5; }
 		inline bool supportFloatingLaneWidth() const { return cyanvasVersion >= 6; }
 		inline bool supportDummyNote() const { return cyanvasVersion >= 6 && untitledVersion >= 1; }
+		inline bool supportHispeedSkipEase() const { return untitledVersion >= 2; }
+		inline bool supportDownFlick() const { return untitledVersion >= 2; }
+
+		inline bool isSupportedVersion() const
+		{
+			return version <= MMWS_VERSION || cyanvasVersion <= CC_MMWS_VERSION ||
+			       untitledVersion <= UC_MMWS_VERSION;
+		}
 	};
 
 	Note NativeScoreSerializer::readNote(NoteType type, IO::BinaryReader& reader,
@@ -84,7 +94,11 @@ namespace MikuMikuWorld
 			note.layer = reader.readUInt32();
 
 		if (!note.hasEase())
+		{
 			note.flick = static_cast<FlickType>(reader.readUInt32());
+			if (note.flick >= FlickType::Down && !version.supportDownFlick())
+				note.flick = FlickType::Default;
+		}
 
 		unsigned int flags = reader.readUInt32();
 		note.critical = (bool)(flags & NOTE_CRITICAL);
@@ -183,8 +197,10 @@ namespace MikuMikuWorld
 				int tick = reader.readUInt32();
 				float speed = reader.readSingle();
 				int layer = version.supportLayers() ? reader.readUInt32() : 0;
+				float skip = version.supportHispeedSkipEase() ? reader.readSingle() : 0;
+				HiSpeedEaseType ease = static_cast<HiSpeedEaseType>(version.supportHispeedSkipEase() ? reader.readInt32() : 0);
 				id_t id = getNextHiSpeedID();
-				score.hiSpeedChanges[id] = HiSpeedChange{ id, tick, speed, layer };
+				score.hiSpeedChanges[id] = HiSpeedChange{ id, tick, speed, layer, skip, ease };
 			}
 		}
 
@@ -227,6 +243,8 @@ namespace MikuMikuWorld
 			writer.writeInt32(hiSpeed.tick);
 			writer.writeSingle(hiSpeed.speed);
 			writer.writeInt32(hiSpeed.layer);
+			writer.writeSingle(hiSpeed.skips);
+			writer.writeInt32(static_cast<int>(hiSpeed.ease));
 		}
 
 		writer.writeInt32(score.skills.size());
@@ -255,6 +273,9 @@ namespace MikuMikuWorld
 		                                                      : signature == CC_MMWS_SIGNATURE
 		                           ? ScoreVersion(0, std::max((int)reader.readUInt16(), 1), (int)reader.readUInt16())
 		                           : ScoreVersion(0, 0, reader.readUInt32());
+
+		if (!version.isSupportedVersion())
+			throw std::runtime_error("Cannot open this file. The file was created in a newer version");
 
 		uint32_t metadataAddress{};
 		uint32_t eventsAddress{};
@@ -319,6 +340,9 @@ namespace MikuMikuWorld
 
 			if (flags & HOLD_GUIDE)
 				hold.startType = hold.endType = HoldNoteType::Guide;
+
+			if (flags & HOLD_DUMMY)
+				hold.dummy = true;
 
 			Note start = readNote(NoteType::Hold, reader, version);
 			start.ID = Note::getNextID();
@@ -464,6 +488,8 @@ namespace MikuMikuWorld
 				flags |= HOLD_START_HIDDEN;
 			if (hold.endType == HoldNoteType::Hidden)
 				flags |= HOLD_END_HIDDEN;
+			if (hold.dummy)
+				flags |= HOLD_DUMMY;
 			writer.writeInt32(flags);
 
 			// note data

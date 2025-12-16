@@ -575,22 +575,41 @@ namespace MikuMikuWorld
 		}
 		if (context.selectedHiSpeedChanges.size() >= 1)
 		{
-			HiSpeedChange& hiSpeed =
+			bool speedEdited = false;
+			HiSpeedChange& editHiSpeed =
 			    context.score.hiSpeedChanges.at(*context.selectedHiSpeedChanges.begin());
+			float speed = editHiSpeed.speed;
+			float skip = editHiSpeed.skips;
+			auto ease = editHiSpeed.ease;
+			bool hideNotes = editHiSpeed.hideNotes;
 			if (ImGui::CollapsingHeader(
 			        IO::concat(ICON_FA_FAST_FORWARD, getString("note_properties_hi_speed"), " ")
 			            .c_str(),
 			        ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				UI::beginPropertyColumns();
-
-				if (UI::addFloatProperty(getString("hi_speed"), hiSpeed.speed, "%.3f"))
-				{
-					hiSpeed.speed = hiSpeed.speed;
-					edited = true;
-				}
-
+				speedEdited |= UI::addFloatProperty(getString("hi_speed_speed"), speed, "%.3f");
+				speedEdited |=
+				    UI::addSelectProperty(getString("hi_speed_ease"), ease, hiSpeedEaseNames,
+				                          arrayLength(hiSpeedEaseNames));
+				speedEdited |=
+				    UI::addFloatProperty(getString("hi_speed_skip_beat"), skip, 
+					IO::formatString("%%.3f %s", getString("beat")).c_str());
+				speedEdited |= UI::addCheckboxProperty(getString("hi_speed_hide_notes"), hideNotes);
 				UI::endPropertyColumns();
+			}
+
+			if (speedEdited)
+			{
+				edited = true;
+				for (auto& id : context.selectedHiSpeedChanges)
+				{
+					HiSpeedChange& hiSpeed = context.score.hiSpeedChanges.at(id);
+					hiSpeed.speed = speed;
+					hiSpeed.skips = skip;
+					hiSpeed.ease = ease;
+					hiSpeed.hideNotes = hideNotes;
+				}
 			}
 		}
 
@@ -603,6 +622,47 @@ namespace MikuMikuWorld
 		UI::beginPropertyColumns();
 		switch (currentMode)
 		{
+		default:
+		case TimelineMode::InsertTap:
+		case TimelineMode::InsertDamage:
+		case TimelineMode::MakeCritical:
+		case TimelineMode::MakeFriction:
+		case TimelineMode::MakeDummy:
+			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+			                   MAX_NOTE_WIDTH);
+			break;
+		case TimelineMode::InsertFlick:
+			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+			                   MAX_NOTE_WIDTH);
+			UI::addSelectProperty<FlickType>(getString("flick"), edit.flickType, flickTypes,
+			                                 arrayLength(flickTypes));
+			break;
+		case TimelineMode::InsertLong:
+			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+			                   MAX_NOTE_WIDTH);
+			UI::addSelectProperty<HoldEndType>(getString("hold_start_type"), edit.holdStartType,
+			                                   holdEndTypes, arrayLength(holdEndTypes));
+			UI::addSelectProperty<HoldEndType>(getString("hold_end_type"), edit.holdEndType,
+			                                   holdEndTypes, arrayLength(holdEndTypes));
+			UI::addSelectProperty(getString("ease_type"), edit.easeType, easeTypes,
+			                      arrayLength(easeTypes));
+			break;
+		case TimelineMode::InsertLongMid:
+			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+			                   MAX_NOTE_WIDTH);
+			UI::addSelectProperty(getString("step_type"), edit.stepType, stepTypes,
+			                      arrayLength(stepTypes));
+			break;
+		case TimelineMode::InsertGuide:
+			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+			                   MAX_NOTE_WIDTH);
+			UI::addSelectProperty(getString("ease_type"), edit.easeType, easeTypes,
+			                      arrayLength(easeTypes));
+			UI::addSelectProperty<GuideColor>(getString("guide_color"), edit.colorType,
+			                                  guideColorsForString, arrayLength(guideColors));
+			UI::addSelectProperty<FadeType>(getString("fade_type"), edit.fadeType, fadeTypes,
+			                                arrayLength(fadeTypes));
+			break;
 		case TimelineMode::InsertBPM:
 			UI::addFloatProperty(getString("bpm"), edit.bpm, "%g BPM");
 			edit.bpm = std::clamp(edit.bpm, MIN_BPM, MAX_BPM);
@@ -614,26 +674,10 @@ namespace MikuMikuWorld
 
 		case TimelineMode::InsertHiSpeed:
 			UI::addFloatProperty(getString("hi_speed_speed"), edit.hiSpeed, "%gx");
-			break;
-
-		default:
-			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
-			                   MAX_NOTE_WIDTH);
-			UI::addSelectProperty(getString("step_type"), edit.stepType, stepTypes,
-			                      arrayLength(stepTypes));
-			UI::addSelectProperty(getString("ease_type"), edit.easeType, easeTypes,
-			                      arrayLength(easeTypes));
-			UI::addSelectProperty<FlickType>(getString("flick"), edit.flickType, flickTypes,
-			                                 arrayLength(flickTypes));
-			UI::addSelectProperty<GuideColor>(getString("guide_color"), edit.colorType,
-			                                  guideColorsForString, arrayLength(guideColors));
-			UI::addSelectProperty<FadeType>(getString("fade_type"), edit.fadeType, fadeTypes,
-			                                arrayLength(fadeTypes));
-			UI::addSelectProperty<HoldEndType>(getString("hold_start_type"), edit.holdStartType,
-			                                   holdEndTypes, arrayLength(holdEndTypes));
-			UI::addSelectProperty<HoldEndType>(getString("hold_end_type"), edit.holdEndType,
-			                                   holdEndTypes, arrayLength(holdEndTypes));
-
+			UI::addSelectProperty(getString("hi_speed_ease"), edit.hiSpeedEase, hiSpeedEaseNames,
+			                      arrayLength(hiSpeedEaseNames));
+			UI::addFloatProperty(getString("hi_speed_skip_beat"), edit.hiSpeedSkip, IO::formatString("%%.3f %s", getString("beat")).c_str());
+			UI::addCheckboxProperty(getString("hi_speed_hide_notes"), edit.hiSpeedHideNotes);
 			break;
 		}
 		UI::endPropertyColumns();
@@ -957,8 +1001,7 @@ namespace MikuMikuWorld
 		                        ImVec2(0.5f, 0.5f));
 		ImGui::SetNextWindowSize(ImVec2(500, 350), ImGuiCond_Appearing);
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL,
-		                           ImGuiWindowFlags_NoResize))
+		if (ImGui::BeginPopupModal(MODAL_TITLE("about"), NULL, ImGuiWindowFlags_NoResize))
 		{
 			ImGui::Text(APP_NAME "\n"
 			                     "This application is based on MikuMikuWorld for Chart Cyanvas\n"
@@ -1366,12 +1409,13 @@ namespace MikuMikuWorld
 						UI::endPropertyColumns();
 					}
 
-					//if (ImGui::CollapsingHeader(getString("file"), ImGuiTreeNodeFlags_DefaultOpen))
+					// if (ImGui::CollapsingHeader(getString("file"),
+					// ImGuiTreeNodeFlags_DefaultOpen))
 					//{
 					//	UI::beginPropertyColumns();
 					//	UI::addCheckboxProperty(getString("minify"), config.minifyOutput);
 					//	UI::endPropertyColumns();
-					//}
+					// }
 
 					if (ImGui::CollapsingHeader(getString("auto_save"),
 					                            ImGuiTreeNodeFlags_DefaultOpen))

@@ -18,10 +18,15 @@ namespace MikuMikuWorld
 		Default,
 		Left,
 		Right,
+		Down,
+		DownLeft,
+		DownRight,
 		FlickTypeCount
 	};
 
-	constexpr const char* flickTypes[]{ "none", "default", "left", "right" };
+	constexpr const char* flickTypes[]{
+		"none", "default", "left", "right", "down", "down_left", "down_right"
+	};
 
 	enum class HoldStepType : uint8_t
 	{
@@ -93,4 +98,13 @@ namespace MikuMikuWorld
 	};
 
 	constexpr const char* fadeTypes[]{ "fade_out", "fade_none", "fade_in" };
+
+	enum class HiSpeedEaseType : uint8_t
+	{
+		None,
+		Linear,
+		EaseTypeCount
+	};
+
+	constexpr const char* hiSpeedEaseNames[] = { "hi_speed_ease_none", "hi_speed_ease_linear" };
 }

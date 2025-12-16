@@ -114,6 +114,9 @@ none, Yok
 default, Varsayilan
 left, Sol
 right, Sag
+#- down,
+#- down_left,
+#- down_right,
 normal, Normal
 hidden, Gizli
 skip, Atlama
@@ -140,6 +143,9 @@ repeat_hold_mids, Basili Tutma Ortalarini Tekrarla
 #- hold_to_traces,
 #- add_traces_for_hold,
 #- convert_hold_to_traces,
+#- convert_guide_hold,
+#- convert_guide_to_hold,
+#- convert_hold_to_guide,
 lerp_hispeeds, Hi-Speed'leri Arastir
 step_type, Basili Tutma Türü
 ease_type, Yavaslama Türü
@@ -193,6 +199,11 @@ decrease_note_size, Nota Boyutunu Azalt
 hi_speed, Hi-Speed
 edit_hi_speed, Hi-Speed Düzenle
 hi_speed_speed, Hiz
+#- hi_speed_skip_beat,
+#- hi_speed_ease,
+#- hi_speed_ease_none,
+#- hi_speed_ease_linear,
+#- hi_speed_hide_notes,
 fade_none, Solma Yok
 fade_in, Solmaya Basla
 fade_out, Solmayi Bitir

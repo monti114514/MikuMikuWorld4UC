@@ -80,8 +80,10 @@ namespace MikuMikuWorld
 	int getFlickArrowSpriteIndex(const Note& note)
 	{
 		int startIndex = note.critical ? 24 : 12;
-		return startIndex + ((std::min(note.width, 6.f) - 1) * 2) +
-		       (note.flick != FlickType::Default ? 1 : 0);
+		int sizeOffset = (std::min(std::max(note.width, 1.f), 6.f) - 1) * 2;
+		int arrowOffset =
+		    (note.flick == FlickType::Default || note.flick == FlickType::Down) ? 0 : 1;
+		return startIndex + sizeOffset + arrowOffset;
 	}
 
 	int getNoteSpriteIndex(const Note& note)

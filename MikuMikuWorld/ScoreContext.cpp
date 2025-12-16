@@ -662,16 +662,19 @@ namespace MikuMikuWorld
 			}
 		}
 
-		int hiSpeedID = 0;
+		int baseHiSpeedID = 0;
 
 		if (jsonIO::arrayHasData(data, "hiSpeedChanges"))
 		{
 			for (const auto& entry : data["hiSpeedChanges"])
 			{
 				HiSpeedChange hs;
-				hs.ID = hiSpeedID++;
+				hs.ID = baseHiSpeedID++;
 				hs.tick = entry["tick"];
 				hs.speed = entry["speed"];
+				hs.skips = jsonIO::tryGetValue(entry, "skip", 0.0f);
+				hs.ease = jsonIO::tryGetValue(entry, "ease", HiSpeedEaseType::None);
+				hs.hideNotes = jsonIO::tryGetValue(entry, "hideNotes", false);
 
 				pasteData.hiSpeedChanges[hs.ID] = hs;
 			}

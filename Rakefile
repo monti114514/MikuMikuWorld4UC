@@ -81,6 +81,7 @@ end
 task "check" => %w[check:translation]
 
 task "update", [:version] do |t, args|
+  abort "version is required" unless args[:version]
   rc = File.read("./MikuMikuWorld/MikuMikuWorld.rc")
 
   version_raw = args[:version]
@@ -93,8 +94,64 @@ task "update", [:version] do |t, args|
     /"ProductVersion", ".+"/,
     %Q("ProductVersion", "#{version.join(".")}")
   )
-
   File.write("./MikuMikuWorld/MikuMikuWorld.rc", rc)
-  sh %Q(git commit --allow-empty -am "release: v#{version_raw}")
+
+  changelog_path = ".update-changelog"
+  changelog = File.exist?(changelog_path) ? File.read(changelog_path).strip : ""
+
+  commit_message = if changelog.empty?
+    "release: v#{version_raw}"
+  else
+    <<~MSG.strip
+      release: v#{version_raw}
+
+      #{changelog}
+    MSG
+  end
+
+  sh %Q(git commit --allow-empty -am "commit_message.gsub('"', '\"')")
   sh %Q(git tag -f v#{version_raw})
+end
+
+task "action:version" do
+  require "open3"
+
+  ref = ENV["GITHUB_REF"] or abort "GITHUB_REF not set"
+  tag = ref.split("/").last
+
+  rc = File.read("./MikuMikuWorld/MikuMikuWorld.rc")
+  version_raw = rc.match(/FILEVERSION\s+(\d+),(\d+),(\d+),(\d+)/).captures.join(".")
+
+  if tag.include?("-preview")
+    body, status = Open3.capture2("git", "log", "-1", "--pretty=%b")
+    abort "git log failed" unless status.success?
+
+    prerelease = "true"
+    release_body = body.strip
+  else
+    tags, status = Open3.capture2("git", "tag", "--sort=-creatordate")
+    abort "git tag failed" unless status.success?
+
+    prev_tag = tags
+    .lines
+    .map(&:strip)
+    .reject { |t| t.start_with?(tag) || t.match?("v.+-.+") }
+    .first or ""
+
+    prerelease = "false"
+    release_body = <<~BODY
+      Download "mmw4uc-#{version_raw}-setup.exe" or "MikuMikuWorld.zip".
+
+      Full Changelog: #{prev_tag}..#{tag}
+    BODY
+  end
+
+  github_output = ENV["GITHUB_OUTPUT"] or abort "GITHUB_OUTPUT not set"
+
+  File.open(github_output, "a") do |f|
+    f.puts "prerelease=#{prerelease}"
+    f.puts "body<<EOF"
+    f.puts release_body
+    f.puts "EOF"
+  end
 end

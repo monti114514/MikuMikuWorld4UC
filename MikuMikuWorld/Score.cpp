@@ -38,7 +38,7 @@ namespace MikuMikuWorld
 		tempoChanges.push_back(Tempo());
 		timeSignatures[0] = { 0, 4, 4 };
 		auto id = getNextHiSpeedID();
-		hiSpeedChanges[id] = HiSpeedChange{ id, 0, 1.0f, 0 };
+		hiSpeedChanges[id] = HiSpeedChange{ id, 0, 1.0f, 0, 0.0f, HiSpeedEaseType::None, false };
 
 		fever.startTick = fever.endTick = -1;
 	}
