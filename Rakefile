@@ -109,7 +109,7 @@ task "update", [:version] do |t, args|
     MSG
   end
 
-  sh %Q(git commit --allow-empty -am "commit_message.gsub('"', '\"')")
+  sh %Q(git commit --allow-empty -am "#{commit_message.gsub('"', '\"')}")
   sh %Q(git tag -f v#{version_raw})
 end
 
