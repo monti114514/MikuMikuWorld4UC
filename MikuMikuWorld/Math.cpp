@@ -8,7 +8,13 @@ namespace MikuMikuWorld
 		return start + percentage * (end - start);
 	}
 
-	float unlerp(float start, float end, float value) { return (value - start) / (end - start); }
+	float unlerp(float start, float end, float value)
+	{
+		if (end != start)
+			return (value - start) / (end - start);
+		else
+			return 0;
+	}
 
 	double lerpD(double start, double end, double percentage)
 	{
@@ -17,7 +23,10 @@ namespace MikuMikuWorld
 
 	double unlerpD(double start, double end, double value)
 	{
-		return (value - start) / (end - start);
+		if (end != start)
+			return (value - start) / (end - start);
+		else
+			return 0;
 	}
 
 	float easeIn(float start, float end, float ratio) { return lerp(start, end, ratio * ratio); }
