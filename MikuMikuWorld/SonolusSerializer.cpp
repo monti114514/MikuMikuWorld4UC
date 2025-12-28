@@ -303,7 +303,7 @@ namespace MikuMikuWorld
 				const auto& tailEnt = levelData.entities[entityJoints[connTailIdx]];
 				RefType tailRef = tailEnt.name;
 
-				if (!hold.isGuide())
+				if (!hold.isGuide() && !hold.dummy)
 					insertTransientTickNote(headEnt, tailEnt, connHeadIdx == 0, levelData.entities);
 
 				levelData.entities.emplace_back(
