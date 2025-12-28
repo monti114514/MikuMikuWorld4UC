@@ -18,9 +18,8 @@ namespace MikuMikuWorld
 	const int CC_MMWS_VERSION = 6;
 	const char* CC_MMWS_SIGNATURE = "CCMMWS";
 	// Version 1: Revert version to int32, support dummy note, dummy hold
-	// Version 2: Support hispeed easing, skip; down flicks
-	// Version 3: Support hispeed hides note
-	const int UC_MMWS_VERSION = 3;
+	// Version 2: Support hispeed easing, skip, hides note; down flicks
+	const int UC_MMWS_VERSION = 2;
 	const char* UC_MMWS_SIGNATURE = "UCMMWS";
 
 	enum NoteFlags
@@ -65,11 +64,10 @@ namespace MikuMikuWorld
 		inline bool supportDummyNote() const { return cyanvasVersion >= 6 && untitledVersion >= 1; }
 		inline bool supportHispeedSkipEase() const { return untitledVersion >= 2; }
 		inline bool supportDownFlick() const { return untitledVersion >= 2; }
-		inline bool supportHispeedHide() const { return untitledVersion >= 3; }
 
 		inline bool isSupportedVersion() const
 		{
-			return version <= MMWS_VERSION || cyanvasVersion <= CC_MMWS_VERSION ||
+			return version <= MMWS_VERSION && cyanvasVersion <= CC_MMWS_VERSION &&
 			       untitledVersion <= UC_MMWS_VERSION;
 		}
 	};
@@ -201,10 +199,8 @@ namespace MikuMikuWorld
 				int layer = version.supportLayers() ? reader.readUInt32() : 0;
 				float skip = version.supportHispeedSkipEase() ? reader.readSingle() : 0;
 				HiSpeedEaseType ease = static_cast<HiSpeedEaseType>(
-				    version.supportHispeedSkipEase()
-				        ? version.supportHispeedHide() ? reader.readUInt16() : reader.readUInt32()
-				        : 0);
-				bool hideNotes = version.supportHispeedHide() ? reader.readUInt16() : false;
+				    version.supportHispeedSkipEase() ? reader.readUInt16() : 0);
+				bool hideNotes = version.supportHispeedSkipEase() ? reader.readUInt16() : false;
 				id_t id = getNextHiSpeedID();
 				score.hiSpeedChanges[id] =
 				    HiSpeedChange{ id, tick, speed, layer, skip, ease, hideNotes };
