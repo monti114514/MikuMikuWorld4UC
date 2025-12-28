@@ -19,7 +19,8 @@ namespace MikuMikuWorld
 	const char* CC_MMWS_SIGNATURE = "CCMMWS";
 	// Version 1: Revert version to int32, support dummy note, dummy hold
 	// Version 2: Support hispeed easing, skip; down flicks
-	const int UC_MMWS_VERSION = 2;
+	// Version 3: Support hispeed hides note
+	const int UC_MMWS_VERSION = 3;
 	const char* UC_MMWS_SIGNATURE = "UCMMWS";
 
 	enum NoteFlags
@@ -64,6 +65,7 @@ namespace MikuMikuWorld
 		inline bool supportDummyNote() const { return cyanvasVersion >= 6 && untitledVersion >= 1; }
 		inline bool supportHispeedSkipEase() const { return untitledVersion >= 2; }
 		inline bool supportDownFlick() const { return untitledVersion >= 2; }
+		inline bool supportHispeedHide() const { return untitledVersion >= 3; }
 
 		inline bool isSupportedVersion() const
 		{
@@ -198,9 +200,14 @@ namespace MikuMikuWorld
 				float speed = reader.readSingle();
 				int layer = version.supportLayers() ? reader.readUInt32() : 0;
 				float skip = version.supportHispeedSkipEase() ? reader.readSingle() : 0;
-				HiSpeedEaseType ease = static_cast<HiSpeedEaseType>(version.supportHispeedSkipEase() ? reader.readInt32() : 0);
+				HiSpeedEaseType ease = static_cast<HiSpeedEaseType>(
+				    version.supportHispeedSkipEase()
+				        ? version.supportHispeedHide() ? reader.readUInt16() : reader.readUInt32()
+				        : 0);
+				bool hideNotes = version.supportHispeedHide() ? reader.readUInt16() : false;
 				id_t id = getNextHiSpeedID();
-				score.hiSpeedChanges[id] = HiSpeedChange{ id, tick, speed, layer, skip, ease };
+				score.hiSpeedChanges[id] =
+				    HiSpeedChange{ id, tick, speed, layer, skip, ease, hideNotes };
 			}
 		}
 
@@ -244,7 +251,8 @@ namespace MikuMikuWorld
 			writer.writeSingle(hiSpeed.speed);
 			writer.writeInt32(hiSpeed.layer);
 			writer.writeSingle(hiSpeed.skips);
-			writer.writeInt32(static_cast<int>(hiSpeed.ease));
+			writer.writeInt16(static_cast<int>(hiSpeed.ease));
+			writer.writeInt16(hiSpeed.hideNotes);
 		}
 
 		writer.writeInt32(score.skills.size());
@@ -269,13 +277,15 @@ namespace MikuMikuWorld
 		    signature != UC_MMWS_SIGNATURE)
 			throw std::runtime_error("Invalid MMWS file. Unrecognized signature");
 
-		ScoreVersion version = signature == UC_MMWS_SIGNATURE ? ScoreVersion(reader.readUInt32())
-		                                                      : signature == CC_MMWS_SIGNATURE
-		                           ? ScoreVersion(0, std::max((int)reader.readUInt16(), 1), (int)reader.readUInt16())
-		                           : ScoreVersion(0, 0, reader.readUInt32());
+		ScoreVersion version =
+		    signature == UC_MMWS_SIGNATURE ? ScoreVersion(reader.readUInt32())
+		    : signature == CC_MMWS_SIGNATURE
+		        ? ScoreVersion(0, std::max((int)reader.readUInt16(), 1), (int)reader.readUInt16())
+		        : ScoreVersion(0, 0, reader.readUInt32());
 
 		if (!version.isSupportedVersion())
-			throw std::runtime_error("Cannot open this file. The file was created in a newer version");
+			throw std::runtime_error(
+			    "Cannot open this file. The file was created in a newer version");
 
 		uint32_t metadataAddress{};
 		uint32_t eventsAddress{};
