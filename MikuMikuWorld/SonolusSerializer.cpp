@@ -299,12 +299,13 @@ namespace MikuMikuWorld
 			for (size_t connHeadIdx = 0, connTailIdx = 1; connTailIdx < entityJoints.size();
 			     ++connHeadIdx, ++connTailIdx)
 			{
+				const auto& startEnt = levelData.entities[entityJoints[0]];
 				const auto& headEnt = levelData.entities[entityJoints[connHeadIdx]];
 				const auto& tailEnt = levelData.entities[entityJoints[connTailIdx]];
 				RefType tailRef = tailEnt.name;
 
 				if (!hold.isGuide() && !hold.dummy)
-					insertTransientTickNote(headEnt, tailEnt, connHeadIdx == 0, levelData.entities);
+					insertTransientTickNote(headEnt, tailEnt, startEnt, levelData.entities);
 
 				levelData.entities.emplace_back(
 				    toConnector(hold, lastHeadRef, tailRef, segStartRef, segEndRef));
@@ -513,7 +514,7 @@ namespace MikuMikuWorld
 					if (!hold.isGuide() && hold.endType == HoldNoteType::Hidden)
 						// Anchor type don't have critical info so we have to do this
 						// to ensure the hold is valid
-						stepNote.critical = holdNotes.front().critical; 
+						stepNote.critical = holdNotes.front().critical;
 					validHold = true;
 				}
 				else
@@ -626,7 +627,7 @@ namespace MikuMikuWorld
 			       { "connectorEase", toEaseNumeric(easing) },
 			       { "segmentKind", toKindNumeric(note.critical, hold) },
 			       { "segmentAlpha", alpha },
-				   { "segmentLayer", 0 },
+			       { "segmentLayer", 0 },
 			       { "effectKind", 0 } } };
 	}
 
@@ -727,13 +728,15 @@ namespace MikuMikuWorld
 	}
 
 	void PySekaiEngine::insertTransientTickNote(const Sonolus::LevelDataEntity& head,
-	                                            const Sonolus::LevelDataEntity& tail, bool isHead,
+	                                            const Sonolus::LevelDataEntity& tail,
+	                                            const Sonolus::LevelDataEntity& start,
 	                                            std::vector<Sonolus::LevelDataEntity>& entities)
 	{
+		double startHalfBeat = start.getDataValue<RealType>("#BEAT") * 2;
 		double headHalfBeat;
 		double headFracHalfBeat =
 		    std::modf(head.getDataValue<RealType>("#BEAT") * 2, &headHalfBeat);
-		bool skips = (isHead || headFracHalfBeat != 0) ? 1 : 0;
+		bool skips = (headHalfBeat <= startHalfBeat || headFracHalfBeat != 0) ? 1 : 0;
 		int endHalfBeat = std::ceil(tail.getDataValue<RealType>("#BEAT") * 2);
 		// Copying the name since they are apart of entities list. They may relocate when inserting.
 		std::string headName = head.name, tailName = tail.name;

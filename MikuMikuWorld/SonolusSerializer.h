@@ -80,7 +80,8 @@ namespace MikuMikuWorld
 		static std::string getTapNoteArchetype(const Note& note);
 		static std::string getHoldNoteArchetype(const Note& note, const HoldNote& holdNote);
 		static void insertTransientTickNote(const Sonolus::LevelDataEntity& head,
-		                                    const Sonolus::LevelDataEntity& tail, bool isHead,
+		                                    const Sonolus::LevelDataEntity& tail,
+		                                    const Sonolus::LevelDataEntity& start,
 		                                    std::vector<Sonolus::LevelDataEntity>& entities);
 		static void estimateAttachEntity(Sonolus::LevelDataEntity& attach,
 		                                 const Sonolus::LevelDataEntity& head,
