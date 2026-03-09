@@ -297,6 +297,17 @@ namespace MikuMikuWorld
 		timeline.update(context, edit, renderer.get());
 		ImGui::End();
 
+		if (ImGui::Begin(IMGUI_TITLE(ICON_FA_DESKTOP, "score_preview"), NULL,
+		                 ImGuiWindowFlags_Static | ImGuiWindowFlags_NoScrollbar |
+		                 ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			previewWindow.update(context, renderer.get());
+			previewWindow.updateUI(timeline, context);
+		}
+		ImGui::End();
+
+
+
 		if (config.debugEnabled)
 		{
 			debugWindow.update(context, timeline);

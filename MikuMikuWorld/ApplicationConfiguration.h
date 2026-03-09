@@ -123,6 +123,20 @@ namespace MikuMikuWorld
 		int seProfileIndex;
 		bool debugEnabled;
 
+		// 【追加】プレビュー用設定変数
+		float pvNoteSpeed{ 10.0f };
+		float pvStageOpacity{ 1.0f };
+		float pvStageCover{ 0.0f };
+		bool pvSimultaneousLine{ true };
+		bool pvMirrorScore{ false };
+		bool pvHoldAnimation{ true };
+		float pvHoldAlpha{ 0.8f };
+		float pvGuideAlpha{ 0.5f };
+		bool pvFlickAnimation{ true };
+		int pvEffectsProfile{ 0 };
+		bool pvDrawToolbar{ true };
+		float pvBackgroundBrightness{ 0.5f };
+
 		InputConfiguration input;
 
 		std::vector<std::string> recentFiles;

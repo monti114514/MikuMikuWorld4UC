@@ -313,7 +313,9 @@ namespace MikuMikuWorld
 	void Application::loadResources()
 	{
 		ResourceManager::loadShader(appDir + "res\\shaders\\basic2d");
+		ResourceManager::loadTransforms(appDir + "res\\effect\\transform.txt");
 		const std::string texturesDir = appDir + "res\\textures\\";
+		ResourceManager::loadTexture(texturesDir + "stage.png");
 		ResourceManager::loadTexture(texturesDir + "notes1.png",
 		                             TextureFilterMode::LinearMipMapLinear,
 		                             TextureFilterMode::Linear);

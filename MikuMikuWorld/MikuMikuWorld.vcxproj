@@ -177,6 +177,7 @@
     <ClCompile Include="Background.cpp" />
     <ClCompile Include="BinaryReader.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
+    <ClCompile Include="EffectView.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="HistoryManager.cpp" />
     <ClCompile Include="ImGuiManager.cpp" />
@@ -196,10 +197,14 @@
     <ClCompile Include="Localization.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Math.cpp" />
+    <ClCompile Include="MinMax.cpp" />
     <ClCompile Include="NativeScoreSerializer.cpp" />
     <ClCompile Include="Note.cpp" />
     <ClCompile Include="OpenGlLoader.cpp" />
     <ClCompile Include="NotesPreset.cpp" />
+    <ClCompile Include="Particle.cpp" />
+    <ClCompile Include="PreviewData.cpp" />
+    <ClCompile Include="PreviewEngine.cpp" />
     <ClCompile Include="Rendering\Camera.cpp" />
     <ClCompile Include="Rendering\Framebuffer.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
@@ -212,6 +217,7 @@
     <ClCompile Include="ScoreContext.cpp" />
     <ClCompile Include="ScoreEditorTimeline.cpp" />
     <ClCompile Include="ScoreEditorWindows.cpp" />
+    <ClCompile Include="ScorePreview.cpp" />
     <ClCompile Include="ScoreSerializer.cpp" />
     <ClCompile Include="ScoreSerializeWindow.cpp" />
     <ClCompile Include="ScoreStats.cpp" />
@@ -237,9 +243,11 @@
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="Colors.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="EffectView.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="HistoryManager.h" />
     <ClInclude Include="IconsFontAwesome5.h" />
+    <ClInclude Include="ImageCrop.h" />
     <ClInclude Include="ImGuiManager.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />
@@ -258,10 +266,14 @@
     <ClInclude Include="Localization.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Audio\miniaudio.h" />
+    <ClInclude Include="MinMax.h" />
     <ClInclude Include="NativeScoreSerializer.h" />
     <ClInclude Include="Note.h" />
     <ClInclude Include="NoteTypes.h" />
     <ClInclude Include="NotesPreset.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="PreviewData.h" />
+    <ClInclude Include="PreviewEngine.h" />
     <ClInclude Include="Rendering\AnchorType.h" />
     <ClInclude Include="Rendering\Camera.h" />
     <ClInclude Include="Rendering\Framebuffer.h" />
@@ -278,6 +290,7 @@
     <ClInclude Include="ScoreContext.h" />
     <ClInclude Include="ScoreEditorTimeline.h" />
     <ClInclude Include="ScoreEditorWindows.h" />
+    <ClInclude Include="ScorePreview.h" />
     <ClInclude Include="ScoreSerializer.h" />
     <ClInclude Include="ScoreSerializeWindow.h" />
     <ClInclude Include="ScoreStats.h" />

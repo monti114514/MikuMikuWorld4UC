@@ -1402,6 +1402,7 @@ namespace MikuMikuWorld
 			upToDate = false;
 
 			scoreStats.calculateStats(score);
+			scorePreviewDrawData.calculateDrawData(score); // <--- これを追加
 		}
 	}
 
@@ -1419,6 +1420,7 @@ namespace MikuMikuWorld
 			upToDate = false;
 
 			scoreStats.calculateStats(score);
+			scorePreviewDrawData.calculateDrawData(score); // <--- これを追加
 		}
 	}
 
@@ -1493,6 +1495,7 @@ void ScoreContext::convertHoldToGuide(GuideColor color)
 		                                                : windowUntitled) +
 		                   "*");
 		scoreStats.calculateStats(score);
+		scorePreviewDrawData.calculateDrawData(score); // <--- これを追加
 
 		upToDate = false;
 	}

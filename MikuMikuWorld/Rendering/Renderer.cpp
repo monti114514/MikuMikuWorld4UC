@@ -148,7 +148,7 @@ namespace MikuMikuWorld
 		{
 			q.vertices[i].position = pos[i];
 			q.vertices[i].color = col;
-			q.vertices[i].uv = uvCoords[i];
+			q.vertices[i].uv = uv[i];
 		}
 
 		quads.push_back(q);
@@ -214,5 +214,20 @@ namespace MikuMikuWorld
 		vBuffer.flushBuffer();
 
 		batchStarted = false;
+	}
+
+	void Renderer::pushQuad(const std::array<DirectX::XMFLOAT4, 4>& pos,
+	                        const std::array<DirectX::XMFLOAT4, 4>& uv, const DirectX::XMMATRIX& m,
+	                        const DirectX::XMFLOAT4& col, int tex, int z)
+	{
+		std::array<DirectX::XMVECTOR, 4> vPos;
+		std::array<DirectX::XMVECTOR, 4> vUv;
+		for (int i = 0; i < 4; ++i)
+		{
+			vPos[i] = DirectX::XMLoadFloat4(&pos[i]);
+			vUv[i] = DirectX::XMLoadFloat4(&uv[i]);
+		}
+		DirectX::XMVECTOR vCol = DirectX::XMLoadFloat4(&col);
+		pushQuad(vPos, vUv, m, vCol, tex, z);
 	}
 }

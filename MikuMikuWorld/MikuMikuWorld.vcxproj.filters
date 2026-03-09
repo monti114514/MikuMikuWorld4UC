@@ -163,6 +163,12 @@
     <ClCompile Include="UscSerializer.cpp">
       <Filter>Score\Serialization</Filter>
     </ClCompile>
+    <ClCompile Include="PreviewData.cpp" />
+    <ClCompile Include="PreviewEngine.cpp" />
+    <ClCompile Include="ScorePreview.cpp" />
+    <ClCompile Include="EffectView.cpp" />
+    <ClCompile Include="MinMax.cpp" />
+    <ClCompile Include="Particle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -358,6 +364,13 @@
     <ClInclude Include="UscSerializer.h">
       <Filter>Score\Serialization</Filter>
     </ClInclude>
+    <ClInclude Include="PreviewData.h" />
+    <ClInclude Include="PreviewEngine.h" />
+    <ClInclude Include="ScorePreview.h" />
+    <ClInclude Include="ImageCrop.h" />
+    <ClInclude Include="EffectView.h" />
+    <ClInclude Include="MinMax.h" />
+    <ClInclude Include="Particle.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Imgui">
