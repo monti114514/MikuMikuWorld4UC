@@ -409,7 +409,7 @@ namespace MikuMikuWorld
 		}
 	}
 
-void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
+	void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
 	{
 		const float total_tm = accumulateDuration(context.scorePreviewDrawData.maxTicks, TICKS_PER_BEAT, context.score.tempoChanges);
 		const double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
@@ -526,28 +526,40 @@ void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* r
 				auto vPos = Engine::perspectiveQuadvPos(stepStartLeft, stepEndLeft, stepStartRight, stepEndRight, (float)stepTop, (float)stepBottom);
 
 				float spr_x1, spr_x2, spr_y1, spr_y2;
-				float stepAlpha = baseAlpha; // ★ この描画ステップでの最終的なアルファ値
+				std::array<DirectX::XMFLOAT4, 4> vertexColors; // ★ 4頂点分のカラー
 
-if (segment.isGuide)
+				if (segment.isGuide)
 				{
 					const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
 					
-					// ★ フェード処理の計算
-					// このステップの中間地点におけるホールド全体の進捗度 [0.0 ~ 1.0]
-					double globalProgressMid = lerpD(holdStartProgress, holdEndProgress, (from_percentage + to_percentage) / 2.0);
+					// ★ 手前(Start)と奥(End)で別々の進捗度を計算する
+					double startProg = lerpD(holdStartProgress, holdEndProgress, from_percentage);
+					double endProg = lerpD(holdStartProgress, holdEndProgress, to_percentage);
 					
-					if (hold.fadeType == FadeType::Out)
-						stepAlpha *= (1.0f - (float)globalProgressMid);
-					else if (hold.fadeType == FadeType::In)
-						stepAlpha *= (float)globalProgressMid;
-					// FadeType::None の場合はそのまま
+					float startAlpha = baseAlpha;
+					float endAlpha = baseAlpha;
 
-					// ★ 旧仕様のカットオフ（GUIDE_XCUTOFF, GUIDE_Y_TOP_CUTOFF等）を削除し、
-					// スプライトの本来の領域のみを正確に切り抜く
+					// 進捗度に合わせて手前と奥のアルファ値をそれぞれ計算
+					if (hold.fadeType == FadeType::Out) {
+						startAlpha *= (1.0f - (float)startProg);
+						endAlpha *= (1.0f - (float)endProg);
+					} else if (hold.fadeType == FadeType::In) {
+						startAlpha *= (float)startProg;
+						endAlpha *= (float)endProg;
+					}
+
+					// 頂点の順番は 0:右手前, 1:右奥, 2:左奥, 3:左手前
+					vertexColors = {{
+						toFloat4(defaultTint, startAlpha), // 手前
+						toFloat4(defaultTint, endAlpha),   // 奥
+						toFloat4(defaultTint, endAlpha),   // 奥
+						toFloat4(defaultTint, startAlpha)  // 手前
+					}};
+
 					spr_x1 = segmentSprite.getX();
 					spr_x2 = segmentSprite.getX() + segmentSprite.getWidth();
-					spr_y1 = lerp(segmentSprite.getY() + segmentSprite.getHeight(), segmentSprite.getY(), (float)lerpD(holdStartProgress, holdEndProgress, from_percentage));
-					spr_y2 = lerp(segmentSprite.getY() + segmentSprite.getHeight(), segmentSprite.getY(), (float)lerpD(holdStartProgress, holdEndProgress, to_percentage));
+					spr_y1 = segmentSprite.getY() + segmentSprite.getHeight(); 
+					spr_y2 = segmentSprite.getY();
 				}
 				else
 				{
@@ -561,7 +573,6 @@ if (segment.isGuide)
 				float texH = (float)texture.getHeight();
 				auto uv = Utils::getUV(spr_x1 / texW, spr_x2 / texW, spr_y1 / texH, spr_y2 / texH);
 
-				// ★ ガイドノーツはアニメーションさせない（!segment.isGuide を条件に追加）
 				if (config.pvHoldAnimation && isHoldActivated && !segment.isGuide && isArrayIndexInBounds(sprIndex - 1, texture.sprites))
 				{
 					const Sprite& activeSprite = texture.sprites[sprIndex - 1];
@@ -569,13 +580,18 @@ if (segment.isGuide)
 					double delta_tm = current_tm - segment.activeTime;
 					float normalAplha = (std::cos((float)delta_tm * MATH_PI * 2.f) + 2.f) / 3.f;
 
-					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, stepAlpha * normalAplha), (int)texture.getID(), zIndex);
+					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, baseAlpha * normalAplha), (int)texture.getID(), zIndex);
 					auto uvActive = Utils::getUV(spr_x1 / texW, spr_x2 / texW, (spr_y1 + norm2ActiveOffset) / texH, (spr_y2 + norm2ActiveOffset) / texH);
-					renderer->pushQuad(vPos, uvActive, model, toFloat4(defaultTint, stepAlpha * (1.f - normalAplha)), (int)texture.getID(), zIndex);
+					renderer->pushQuad(vPos, uvActive, model, toFloat4(defaultTint, baseAlpha * (1.f - normalAplha)), (int)texture.getID(), zIndex);
+				}
+				else if (segment.isGuide)
+				{
+					// ★ ガイドノーツは頂点ごとのカラー配列を渡す新しいオーバーロードを呼ぶ
+					renderer->pushQuad(vPos, uv, model, vertexColors, (int)texture.getID(), zIndex);
 				}
 				else
 				{
-					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, stepAlpha), (int)texture.getID(), zIndex);
+					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, baseAlpha), (int)texture.getID(), zIndex);
 				}
 
 				from_percentage = to_percentage;

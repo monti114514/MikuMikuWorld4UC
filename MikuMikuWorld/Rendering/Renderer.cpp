@@ -230,4 +230,36 @@ namespace MikuMikuWorld
 		DirectX::XMVECTOR vCol = DirectX::XMLoadFloat4(&col);
 		pushQuad(vPos, vUv, m, vCol, tex, z);
 	}
+
+	void Renderer::pushQuad(const std::array<DirectX::XMFLOAT4, 4>& pos,
+	                        const std::array<DirectX::XMFLOAT4, 4>& uv, const DirectX::XMMATRIX& m,
+	                        const std::array<DirectX::XMFLOAT4, 4>& colors, int tex, int z)
+	{
+		std::array<DirectX::XMVECTOR, 4> vPos;
+		std::array<DirectX::XMVECTOR, 4> vUv;
+		std::array<DirectX::XMVECTOR, 4> vCol;
+		for (int i = 0; i < 4; ++i)
+		{
+			vPos[i] = DirectX::XMLoadFloat4(&pos[i]);
+			vUv[i] = DirectX::XMLoadFloat4(&uv[i]);
+			vCol[i] = DirectX::XMLoadFloat4(&colors[i]); // ★ 頂点ごとの色をロード
+		}
+		
+		Quad q;
+		q.matrix = m;
+		q.texture = tex;
+		q.zIndex = z;
+		for (int i = 0; i < 4; ++i)
+		{
+			q.vertices[i].position = vPos[i];
+			q.vertices[i].color = vCol[i];
+			q.vertices[i].uv = vUv[i];
+		}
+
+		quads.push_back(q);
+
+		++numQuads;
+		numVertices += 4;
+		numIndices += 6;
+	}
 }
