@@ -61,7 +61,7 @@ namespace MikuMikuWorld
 		              const std::array<DirectX::XMFLOAT4, 4>& uv, const DirectX::XMMATRIX& m,
 		              const DirectX::XMFLOAT4& col, int tex, int z);
 
-		// ★ 追加：4頂点それぞれに異なるカラー（アルファ値）を指定するためのメソッド
+		//  追加：4頂点それぞれに異なるカラー（アルファ値）を指定するためのメソッド
 		void pushQuad(const std::array<DirectX::XMFLOAT4, 4>& pos,
 		              const std::array<DirectX::XMFLOAT4, 4>& uv, const DirectX::XMMATRIX& m,
 		              const std::array<DirectX::XMFLOAT4, 4>& colors, int tex, int z);

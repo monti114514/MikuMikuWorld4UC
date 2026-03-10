@@ -1,7 +1,7 @@
 #pragma once
 #include "ScoreEditorWindows.h"
 #include "ScoreSerializeWindow.h"
-#include "ScorePreview.h" // © š‚±‚ê‚ğ’Ç‰Á
+#include "ScorePreview.h" // © ‚±‚ê‚ğ’Ç‰Á
 #include <future>
 
 namespace MikuMikuWorld
@@ -15,7 +15,7 @@ namespace MikuMikuWorld
 		PresetManager presetManager;
 
 		ScoreEditorTimeline timeline{};
-		ScorePreviewWindow previewWindow{}; // © š‚±‚ê‚ğ’Ç‰Á
+		ScorePreviewWindow previewWindow{}; // © ‚±‚ê‚ğ’Ç‰Á
 		ScorePropertiesWindow propertiesWindow{};
 		ScoreNotePropertiesWindow notePropertiesWindow{};
 		ScoreOptionsWindow optionsWindow{};

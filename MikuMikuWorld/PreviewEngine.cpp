@@ -34,7 +34,7 @@ namespace MikuMikuWorld
 
 namespace MikuMikuWorld::Engine
 {
-	// ★ ハイスピード対応の心臓部（レイヤー対応版）
+	//  ハイスピード対応の心臓部（レイヤー対応版）
 	double accumulateScaledDuration(int tick, int beatTicks, const std::vector<Tempo>& tempos, const std::unordered_map<id_t, HiSpeedChange>& hiSpeeds, int layer)
 	{
 		// 1. unordered_mapからvectorに変換し、指定されたlayerに一致するハイスピードのみを抽出する
@@ -103,7 +103,7 @@ namespace MikuMikuWorld::Engine
 
 	Range getNoteVisualTime(Note const& note, Score const& score, float noteSpeed)
 	{
-		// ★ 事前計算時に、そのノーツが所属するレイヤーのハイスピードを適用する
+		//  事前計算時に、そのノーツが所属するレイヤーのハイスピードを適用する
 		double targetTime = accumulateScaledDuration(note.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, note.layer);
 		return {targetTime - getNoteDuration(noteSpeed), targetTime};
 	}

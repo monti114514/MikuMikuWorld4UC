@@ -242,7 +242,7 @@ namespace MikuMikuWorld
 		{
 			vPos[i] = DirectX::XMLoadFloat4(&pos[i]);
 			vUv[i] = DirectX::XMLoadFloat4(&uv[i]);
-			vCol[i] = DirectX::XMLoadFloat4(&colors[i]); // ★ 頂点ごとの色をロード
+			vCol[i] = DirectX::XMLoadFloat4(&colors[i]); //  頂点ごとの色をロード
 		}
 		
 		Quad q;

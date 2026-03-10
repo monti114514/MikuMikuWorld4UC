@@ -24,15 +24,16 @@ namespace MikuMikuWorld::Engine
 	{
 		int refID;
 		Range visualTime;
-		NoteType type;  // 追加: ダメージノーツなどの判別用
-		bool dummy;     // 追加: ダミー(フェイク)ノーツ判別用
-		int layer;      // 追加: レイヤー情報
+		NoteType type;
+		bool dummy;
+		int layer;
 	};
 
 	struct DrawingLine
 	{
 		Range xPos;
 		Range visualTime;
+		int tick;
 	};
 
 	struct DrawingHoldTick
@@ -40,8 +41,8 @@ namespace MikuMikuWorld::Engine
 		int refID;
 		float center;
 		Range visualTime;
-		bool dummy;     // 追加
-		int layer;      // 追加
+		bool dummy;
+		int layer;
 	};
 
 	struct DrawingHoldSegment

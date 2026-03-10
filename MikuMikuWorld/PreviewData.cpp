@@ -1,8 +1,8 @@
 #include <queue>
 #include <stdexcept>
 #include "PreviewData.h"
-#include "PreviewEngine.h" // 【追加】算術関数の読み込み
-#include "Tempo.h"         // 【追加】時間計算関数の読み込み
+#include "PreviewEngine.h"
+#include "Tempo.h"
 #include "ApplicationConfiguration.h"
 #include "Constants.h"
 #include "ResourceManager.h"
@@ -26,12 +26,10 @@ namespace MikuMikuWorld::Engine
 		this->clear();
 		try
 		{
-			// 【修正】MMW4UCにはまだ設定画面にプレビュー速度項目がないため、仮の数値を使用
 			this->noteSpeed = 10.0f;
 
 			std::map<int, Range> simBuilder;
 			
-			// 【修正】MMW4UCでは unordered_map なので、通常の範囲forループを使用
 			for (const auto& [id, note] : score.notes)
 			{
 				if (note.layer >= 0 && note.layer < score.layers.size() && score.layers[note.layer].hidden)
@@ -66,12 +64,13 @@ namespace MikuMikuWorld::Engine
 			{
 				if (x_range.min != x_range.max)
 				{
-					double targetTime = accumulateScaledDuration(line_tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges);
-					drawingLines.push_back(DrawingLine{ x_range, Range{ targetTime - getNoteDuration(noteSpeed), targetTime } });
+					// 同時押しラインはとりあえずレイヤー0を基準とする
+					double targetTime = accumulateScaledDuration(line_tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, 0);
+					// 末尾に line_tick を追加
+					drawingLines.push_back(DrawingLine{ x_range, Range{ targetTime - getNoteDuration(noteSpeed), targetTime }, line_tick });
 				}
 			}
 
-			// 【修正】こちらも unordered_map なので通常の範囲forループを使用
 			for (const auto& [id, holdNote] : score.holdNotes)
 			{
 				addHoldNote(*this, holdNote, score);
@@ -106,7 +105,7 @@ namespace MikuMikuWorld::Engine
 		float startTime = activeTime;
 		DrawingHoldStep head = {
 			startNote.tick,
-			accumulateScaledDuration(startNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges),
+			accumulateScaledDuration(startNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, startNote.layer),
 			Engine::laneToLeft(startNote.lane),
 			Engine::laneToLeft(startNote.lane) + startNote.width,
 			holdNote.start.ease
@@ -121,7 +120,7 @@ namespace MikuMikuWorld::Engine
 			auto easeFunction = getEaseFunction(head.ease);
 			DrawingHoldStep tail = {
 				tailNote.tick,
-				accumulateScaledDuration(tailNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges),
+				accumulateScaledDuration(tailNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, startNote.layer),
 				Engine::laneToLeft(tailNote.lane),
 				Engine::laneToLeft(tailNote.lane) + tailNote.width,
 				tailStep.ease
@@ -151,7 +150,7 @@ namespace MikuMikuWorld::Engine
 				const Note& skipNote = score.notes.at(skipStep.ID);
 				if (skipNote.tick > tail.tick)
 					break;
-				double tickTime = accumulateScaledDuration(skipNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges);
+				double tickTime = accumulateScaledDuration(skipNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, startNote.layer);
 				double tick_t = unlerpD(head.time, tail.time, tickTime);
 				float skipLeft = easeFunction(head.left, tail.left, tick_t);
 				float skipRight = easeFunction(head.right, tail.right, tick_t);
@@ -167,7 +166,7 @@ namespace MikuMikuWorld::Engine
 			}
 			if (tailStep.type != HoldStepType::Hidden)
 			{
-				double tickTime = accumulateScaledDuration(tailNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges);
+				double tickTime = accumulateScaledDuration(tailNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, startNote.layer);
 				drawData.drawingHoldTicks.push_back(DrawingHoldTick{
 					tailNote.ID,
 					getNoteCenter(tailNote),

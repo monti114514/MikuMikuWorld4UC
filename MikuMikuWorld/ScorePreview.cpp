@@ -328,7 +328,6 @@ namespace MikuMikuWorld
 	{
 		double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
 		
-		// ★ 各レイヤーごとの現在の視覚的時間を一括計算してキャッシュする
 		std::vector<double> layer_stm(context.score.layers.size());
 		for (int i = 0; i < context.score.layers.size(); ++i)
 			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
@@ -338,15 +337,20 @@ namespace MikuMikuWorld
 		for (auto& note : drawData.drawingNotes)
 		{
 			const Note& noteData = context.score.notes.at(note.refID);
-			
-			// ★ このノーツが所属するレイヤーの視覚的時間を使用する
+
+			//  時間的クリッピング：現在時間がノーツの判定時間を過ぎていたら描画しない
+			if (context.currentTick > noteData.tick)
+				continue;
+
 			int layer = std::clamp(noteData.layer, 0, (int)context.score.layers.size() - 1);
 			double scaled_tm = layer_stm[layer];
 
-			if (scaled_tm < note.visualTime.min || scaled_tm > note.visualTime.max)
+			double y = Engine::approach(note.visualTime.min, note.visualTime.max, scaled_tm);
+			
+			//  Y座標が画面の描画範囲（奥:-0.1 ～ 手前:1.2）を越えたらカットする
+			if (y < -0.1 || y > 1.2)
 				continue;
 			
-			double y = Engine::approach(note.visualTime.min, note.visualTime.max, scaled_tm);
 			float l = Engine::laneToLeft(noteData.lane), r = Engine::laneToLeft(noteData.lane) + noteData.width;
 			drawNoteBase(renderer, noteData, l, r, (float)y);
 			if (noteData.friction)
@@ -360,7 +364,6 @@ namespace MikuMikuWorld
 	{
 		if (!config.pvSimultaneousLine || noteTextures.notes == -1) return;
 		
-		// ★ 同時押しラインは特定のノーツに紐付いていないため、現在選択中のレイヤーを基準に描画する
 		int currentLayer = std::clamp(context.selectedLayer, 0, (int)context.score.layers.size() - 1);
 		double scaled_tm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, currentLayer);
 		
@@ -381,10 +384,16 @@ namespace MikuMikuWorld
 
 		for (auto& line : drawData)
 		{
-			if (scaled_tm < line.visualTime.min || scaled_tm > line.visualTime.max) continue;
+			if (context.currentTick > line.tick)
+				continue;
+
+			float y = (float)Engine::approach(line.visualTime.min, line.visualTime.max, scaled_tm);
+			
+			//  Y座標クリッピング
+			if (y < -0.1 || y > 1.2) continue;
+
 			float noteLeft = line.xPos.min, noteRight = line.xPos.max;
 			if (config.pvMirrorScore) std::swap(noteLeft *= -1, noteRight *= -1);
-			float y = (float)Engine::approach(line.visualTime.min, line.visualTime.max, scaled_tm);
 			
 			auto vPos = lineTransform.apply(Engine::perspectiveQuadvPos(noteLeft, noteRight, noteTop, noteBottom));
 			auto uv = Utils::getUV(sprite.getX() / texW, (sprite.getX() + sprite.getWidth()) / texW, sprite.getY() / texH, (sprite.getY() + sprite.getHeight()) / texH);
@@ -393,11 +402,10 @@ namespace MikuMikuWorld
 		}
 	}
 
-	void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *renderer)
+void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *renderer)
 	{
 		if (noteTextures.notes == -1) return;
 		
-		// ★ 各レイヤーの視覚的時間をキャッシュ
 		std::vector<double> layer_stm(context.score.layers.size());
 		for (int i = 0; i < context.score.layers.size(); ++i)
 			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
@@ -417,15 +425,20 @@ namespace MikuMikuWorld
 		{
 			const Note& noteData = context.score.notes.at(tick.refID);
 			
-			// ★ 所属レイヤーの視覚的時間を使用
+			if (context.currentTick > noteData.tick)
+				continue;
+
 			int layer = std::clamp(noteData.layer, 0, (int)context.score.layers.size() - 1);
 			double scaled_tm = layer_stm[layer];
 
-			if (scaled_tm < tick.visualTime.min || scaled_tm > tick.visualTime.max) continue;
+			float y = (float)Engine::approach(tick.visualTime.min, tick.visualTime.max, scaled_tm);
+			
+			//  Y座標クリッピング
+			if (y < -0.1 || y > 1.2) continue;
+
 			int sprIndex = getNoteSpriteIndex(noteData);
 			if (!isArrayIndexInBounds(sprIndex, texture.sprites)) continue;
 			const Sprite& sprite = texture.sprites[sprIndex];
-			float y = (float)Engine::approach(tick.visualTime.min, tick.visualTime.max, scaled_tm);
 			const float tickCenter = tick.center * (config.pvMirrorScore ? -1 : 1);
 			
 			auto vPos = transform.apply(Engine::quadvPos(tickCenter - w, tickCenter + w, noteTop, noteBottom));
@@ -435,7 +448,7 @@ namespace MikuMikuWorld
 		}
 	}
 
-	void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
+void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
 	{
 		const float total_tm = accumulateDuration(context.scorePreviewDrawData.maxTicks, TICKS_PER_BEAT, context.score.tempoChanges);
 		const double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
@@ -443,7 +456,6 @@ namespace MikuMikuWorld
 		const float mirror = config.pvMirrorScore ? -1 : 1;
 		const auto& drawData = context.scorePreviewDrawData;
 
-		// ★ 各レイヤーの視覚的時間をキャッシュ
 		std::vector<double> layer_stm(context.score.layers.size());
 		for (int i = 0; i < context.score.layers.size(); ++i)
 			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
@@ -453,16 +465,45 @@ namespace MikuMikuWorld
 			const Note& holdEnd = context.score.notes.at(segment.endID);
 			const Note& holdStart = context.score.notes.at(holdEnd.parentID);
 			
-			// ★ ホールドの始点ノーツが所属するレイヤーの視覚的時間を使用
 			int layer = std::clamp(holdStart.layer, 0, (int)context.score.layers.size() - 1);
 			double current_stm = layer_stm[layer];
-			double visible_stm = current_stm + noteDuration;
+
+			// ★ 1. 時間的クリッピング：楽曲の絶対時間で判定済みなら描画しない
+			if (current_tm >= segment.endTime)
+				continue;
+
+			// ★ 2. 現在判定線の上にある「進捗割合」を計算
+			double hitProgress = 0.0;
+			if (current_tm > segment.startTime)
+				hitProgress = std::clamp(unlerpD(segment.startTime, segment.endTime, current_tm), 0.0, 1.0);
+
+			// ★ 3. 画面に映る範囲を計算（上下に少し余裕を持たせる）
+			double stm_top = current_stm + 1.2 * noteDuration;
+			double stm_bottom = current_stm - 0.2 * noteDuration;
+
+			if (std::abs(segment.headTime - segment.tailTime) < 1e-6)
+				continue;
+				
+			double p_view_a = unlerpD(segment.headTime, segment.tailTime, stm_bottom);
+			double p_view_b = unlerpD(segment.headTime, segment.tailTime, stm_top);
+			double p_min = std::min(p_view_a, p_view_b);
+			double p_max = std::max(p_view_a, p_view_b);
+
+			// ★ 4. 「判定線(hitProgress)」から「セグメント終端」の間で、かつ「画面内」の部分だけを描画範囲にする
+			double segmentStartProgress = std::max(hitProgress, p_min);
+			double segmentEndProgress = std::min(1.0, p_max);
+
+			if (segmentStartProgress >= segmentEndProgress)
+				continue;
+
+			// ★ 5. 決定した割合から描画用の視覚的時間(stm)を再計算（これでHsが負でも方向が壊れない）
+			double segmentStart_stm = lerpD(segment.headTime, segment.tailTime, segmentStartProgress);
+			double segmentEnd_stm = lerpD(segment.headTime, segment.tailTime, segmentEndProgress);
 
 			float holdStartCenter = Engine::getNoteCenter(holdStart) * mirror;
 			bool isHoldActivated = current_tm >= segment.activeTime;
 			bool isSegmentActivated = current_tm >= segment.startTime;
 
-			// テクスチャとスプライトインデックスの決定
 			int textureID;
 			int sprIndex;
 			if (segment.isGuide)
@@ -482,27 +523,7 @@ namespace MikuMikuWorld
 			if (!isArrayIndexInBounds(sprIndex, texture.sprites)) continue;
 			const Sprite& segmentSprite = texture.sprites[sprIndex];
 
-			double segmentHead_stm = std::min(segment.headTime, segment.tailTime);
-			double segmentTail_stm = std::max(segment.headTime, segment.tailTime);
-			double segmentStart_stm = std::max(segmentHead_stm, current_stm);
-			double segmentEnd_stm = std::min(segmentTail_stm, visible_stm);
-			
-			if ((std::min(segment.headTime, segment.tailTime) > visible_stm && segment.startTime > current_tm) || current_tm >= segment.endTime) continue;
-
-			double segmentStartProgress, segmentEndProgress, holdStartProgress, holdEndProgress;
-
-			if (!isSegmentActivated)
-			{
-				segmentStartProgress = 0;
-				segmentEndProgress = unlerpD(segmentHead_stm, segmentTail_stm, segmentEnd_stm);
-			}
-			else
-			{
-				segmentStartProgress = unlerpD(segment.startTime, segment.endTime, current_tm);
-				segmentEndProgress = lerpD(segmentStartProgress, 1.0, unlerpD(current_stm, segmentTail_stm, segmentEnd_stm));
-			}
-
-			const int steps = (segment.ease == EaseType::Linear ? 10 : 15) + static_cast<int>(std::log(std::max((segmentEnd_stm - segmentStart_stm) / noteDuration, 4.5399e-5)) + 0.5);
+			const int steps = (segment.ease == EaseType::Linear ? 10 : 15) + static_cast<int>(std::log(std::max(std::abs(segmentEnd_stm - segmentStart_stm) / noteDuration, 4.5399e-5)) + 0.5);
 			const auto ease = getEaseFunction(segment.ease);
 			float startLeft = segment.headLeft, startRight = segment.headRight, endLeft = segment.tailLeft, endRight = segment.tailRight;
 
@@ -519,6 +540,7 @@ namespace MikuMikuWorld
 				std::swap(endLeft *= -1, endRight *= -1);
 			}
 
+			double holdStartProgress, holdEndProgress;
 			if (segment.isGuide)
 			{
 				const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
@@ -526,16 +548,8 @@ namespace MikuMikuWorld
 				double headProgress = segment.tailStepIndex / totalJoints;
 				double tailProgress = (segment.tailStepIndex + 1) / totalJoints;
 
-				if (!isSegmentActivated)
-				{
-					holdStartProgress = headProgress;
-					holdEndProgress = lerpD(headProgress, tailProgress, unlerpD(segmentHead_stm, segmentTail_stm, segmentEnd_stm));
-				}
-				else
-				{
-					holdStartProgress = lerpD(headProgress, tailProgress, unlerp(segment.startTime, segment.endTime, current_tm));
-					holdEndProgress = lerpD(holdStartProgress, tailProgress, unlerpD(current_stm, segment.tailTime, segmentEnd_stm));
-				}
+				holdStartProgress = lerpD(headProgress, tailProgress, segmentStartProgress);
+				holdEndProgress = lerpD(headProgress, tailProgress, segmentEndProgress);
 			}
 
 			double from_percentage = 0;
@@ -562,20 +576,15 @@ namespace MikuMikuWorld
 				auto vPos = Engine::perspectiveQuadvPos(stepStartLeft, stepEndLeft, stepStartRight, stepEndRight, (float)stepTop, (float)stepBottom);
 
 				float spr_x1, spr_x2, spr_y1, spr_y2;
-				std::array<DirectX::XMFLOAT4, 4> vertexColors; // 4頂点分のカラー
+				std::array<DirectX::XMFLOAT4, 4> vertexColors;
 
 				if (segment.isGuide)
 				{
 					const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
-					
-					// 手前(Start)と奥(End)で別々の進捗度を計算する
 					double startProg = lerpD(holdStartProgress, holdEndProgress, from_percentage);
 					double endProg = lerpD(holdStartProgress, holdEndProgress, to_percentage);
-					
 					float startAlpha = baseAlpha;
 					float endAlpha = baseAlpha;
-
-					// 進捗度に合わせて手前と奥のアルファ値をそれぞれ計算
 					if (hold.fadeType == FadeType::Out) {
 						startAlpha *= (1.0f - (float)startProg);
 						endAlpha *= (1.0f - (float)endProg);
@@ -583,15 +592,12 @@ namespace MikuMikuWorld
 						startAlpha *= (float)startProg;
 						endAlpha *= (float)endProg;
 					}
-
-					// 頂点の順番は 0:右手前, 1:右奥, 2:左奥, 3:左手前
 					vertexColors = {{
-						toFloat4(defaultTint, startAlpha), // 手前
-						toFloat4(defaultTint, endAlpha),   // 奥
-						toFloat4(defaultTint, endAlpha),   // 奥
-						toFloat4(defaultTint, startAlpha)  // 手前
+						toFloat4(defaultTint, startAlpha),
+						toFloat4(defaultTint, endAlpha),
+						toFloat4(defaultTint, endAlpha),
+						toFloat4(defaultTint, startAlpha)
 					}};
-
 					spr_x1 = segmentSprite.getX();
 					spr_x2 = segmentSprite.getX() + segmentSprite.getWidth();
 					spr_y1 = segmentSprite.getY() + segmentSprite.getHeight(); 
@@ -615,7 +621,6 @@ namespace MikuMikuWorld
 					const int norm2ActiveOffset = (int)(activeSprite.getY() - segmentSprite.getY());
 					double delta_tm = current_tm - segment.activeTime;
 					float normalAplha = (std::cos((float)delta_tm * MATH_PI * 2.f) + 2.f) / 3.f;
-
 					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, baseAlpha * normalAplha), (int)texture.getID(), zIndex);
 					auto uvActive = Utils::getUV(spr_x1 / texW, spr_x2 / texW, (spr_y1 + norm2ActiveOffset) / texH, (spr_y2 + norm2ActiveOffset) / texH);
 					renderer->pushQuad(vPos, uvActive, model, toFloat4(defaultTint, baseAlpha * (1.f - normalAplha)), (int)texture.getID(), zIndex);
@@ -628,7 +633,6 @@ namespace MikuMikuWorld
 				{
 					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, baseAlpha), (int)texture.getID(), zIndex);
 				}
-
 				from_percentage = to_percentage;
 				stepStart_stm = stepEnd_stm;
 				stepTop = stepBottom;
@@ -639,12 +643,12 @@ namespace MikuMikuWorld
 
 	void ScorePreviewWindow::drawNoteBase(Renderer* renderer, const Note& note, float noteLeft, float noteRight, float y, float zScalar)
 	{
-		// ★ ダメージノーツの場合は専用のテクスチャIDを使う
+		//  ダメージノーツの場合は専用のテクスチャIDを使う
 		int textureID = note.getType() == NoteType::Damage ? noteTextures.ccNotes : noteTextures.notes;
 		if (textureID == -1) return;
 		const Texture& texture = ResourceManager::textures[textureID];
 
-		// ★ ダメージノーツの場合は専用のスプライトインデックス取得関数を使う
+		//  ダメージノーツの場合は専用のスプライトインデックス取得関数を使う
 		const int sprIndex = note.getType() == NoteType::Damage ? getCcNoteSpriteIndex(note) : getNoteSpriteIndex(note);
 		
 		if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
@@ -723,7 +727,7 @@ void ScorePreviewWindow::drawFlickArrow(Renderer *renderer, const Note &note, fl
 		if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
 		const Sprite& arrowSprite = texture.sprites[sprIndex];
 
-		// ★ DownLeft, DownRight も左右フリックとして扱うように判定を追加
+		//  DownLeft, DownRight も左右フリックとして扱うように判定を追加
 		bool isLeftOrRight = (note.flick == FlickType::Left || note.flick == FlickType::Right || note.flick == FlickType::DownLeft || note.flick == FlickType::DownRight);
 		bool isRightward = (note.flick == FlickType::Right || note.flick == FlickType::DownRight);
 
@@ -742,7 +746,7 @@ void ScorePreviewWindow::drawFlickArrow(Renderer *renderer, const Note &note, fl
 		float texH = (float)texture.getHeight();
 		auto uv = Utils::getUV(arrowSprite.getX() / texW, (arrowSprite.getX() + arrowSprite.getWidth()) / texW, arrowSprite.getY() / texH, (arrowSprite.getY() + arrowSprite.getHeight()) / texH);
 		
-		// ★ 下フリックの場合、UV座標のY軸を入れ替えて画像を上下反転させる
+		//  下フリックの場合、UV座標のY軸を入れ替えて画像を上下反転させる
 		bool isDown = (note.flick >= FlickType::Down && note.flick <= FlickType::DownRight);
 		if (isDown)
 		{
@@ -845,7 +849,7 @@ void ScorePreviewWindow::drawFlickArrow(Renderer *renderer, const Note &note, fl
 
 		float currentTm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
 		
-		// ★ ツールバーの表示用には、現在選択されているレイヤーの視覚的時間を用いる
+		//  ツールバーの表示用には、現在選択されているレイヤーの視覚的時間を用いる
 		int currentLayer = std::clamp(context.selectedLayer, 0, (int)context.score.layers.size() - 1);
 		double currentScaledTm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, currentLayer);
 		int currentMeasure = accumulateMeasures(context.currentTick, TICKS_PER_BEAT, context.score.timeSignatures);
