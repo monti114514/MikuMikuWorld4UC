@@ -34,17 +34,21 @@ namespace MikuMikuWorld
 
 namespace MikuMikuWorld::Engine
 {
-	// ★ ハイスピード対応の心臓部
-	double accumulateScaledDuration(int tick, int beatTicks, const std::vector<Tempo>& tempos, const std::unordered_map<id_t, HiSpeedChange>& hiSpeeds)
+	// ★ ハイスピード対応の心臓部（レイヤー対応版）
+	double accumulateScaledDuration(int tick, int beatTicks, const std::vector<Tempo>& tempos, const std::unordered_map<id_t, HiSpeedChange>& hiSpeeds, int layer)
 	{
-		if (hiSpeeds.empty())
-			return accumulateDuration(tick, beatTicks, tempos);
-
-		// 1. unordered_mapからvectorに変換し、Tick順に並べ替える
+		// 1. unordered_mapからvectorに変換し、指定されたlayerに一致するハイスピードのみを抽出する
 		std::vector<HiSpeedChange> hsList;
 		hsList.reserve(hiSpeeds.size());
 		for (const auto& [id, hs] : hiSpeeds)
-			hsList.push_back(hs);
+		{
+			if (hs.layer == layer)
+				hsList.push_back(hs);
+		}
+
+		// そのレイヤーにハイスピード変化が一つもなければ、BPMのみの通常計算を返す
+		if (hsList.empty())
+			return accumulateDuration(tick, beatTicks, tempos);
 
 		std::stable_sort(hsList.begin(), hsList.end(), [](const HiSpeedChange& a, const HiSpeedChange& b) {
 			return a.tick < b.tick;
@@ -99,7 +103,8 @@ namespace MikuMikuWorld::Engine
 
 	Range getNoteVisualTime(Note const& note, Score const& score, float noteSpeed)
 	{
-		double targetTime = accumulateScaledDuration(note.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges);
+		// ★ 事前計算時に、そのノーツが所属するレイヤーのハイスピードを適用する
+		double targetTime = accumulateScaledDuration(note.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, note.layer);
 		return {targetTime - getNoteDuration(noteSpeed), targetTime};
 	}
 

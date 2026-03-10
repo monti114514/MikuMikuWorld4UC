@@ -327,14 +327,25 @@ namespace MikuMikuWorld
 	void ScorePreviewWindow::drawNotes(const ScoreContext& context, Renderer *renderer)
 	{
 		double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
-		double scaled_tm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges);
+		
+		// ★ 各レイヤーごとの現在の視覚的時間を一括計算してキャッシュする
+		std::vector<double> layer_stm(context.score.layers.size());
+		for (int i = 0; i < context.score.layers.size(); ++i)
+			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
+
 		const auto& drawData = context.scorePreviewDrawData;
 	
 		for (auto& note : drawData.drawingNotes)
 		{
+			const Note& noteData = context.score.notes.at(note.refID);
+			
+			// ★ このノーツが所属するレイヤーの視覚的時間を使用する
+			int layer = std::clamp(noteData.layer, 0, (int)context.score.layers.size() - 1);
+			double scaled_tm = layer_stm[layer];
+
 			if (scaled_tm < note.visualTime.min || scaled_tm > note.visualTime.max)
 				continue;
-			const Note& noteData = context.score.notes.at(note.refID);
+			
 			double y = Engine::approach(note.visualTime.min, note.visualTime.max, scaled_tm);
 			float l = Engine::laneToLeft(noteData.lane), r = Engine::laneToLeft(noteData.lane) + noteData.width;
 			drawNoteBase(renderer, noteData, l, r, (float)y);
@@ -348,7 +359,11 @@ namespace MikuMikuWorld
 	void ScorePreviewWindow::drawLines(const ScoreContext& context, Renderer* renderer)
 	{
 		if (!config.pvSimultaneousLine || noteTextures.notes == -1) return;
-		double scaled_tm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges);
+		
+		// ★ 同時押しラインは特定のノーツに紐付いていないため、現在選択中のレイヤーを基準に描画する
+		int currentLayer = std::clamp(context.selectedLayer, 0, (int)context.score.layers.size() - 1);
+		double scaled_tm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, currentLayer);
+		
 		const auto& drawData = context.scorePreviewDrawData.drawingLines;
 
 		const Texture& texture = getNoteTexture();
@@ -381,7 +396,12 @@ namespace MikuMikuWorld
 	void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *renderer)
 	{
 		if (noteTextures.notes == -1) return;
-		double scaled_tm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges);
+		
+		// ★ 各レイヤーの視覚的時間をキャッシュ
+		std::vector<double> layer_stm(context.score.layers.size());
+		for (int i = 0; i < context.score.layers.size(); ++i)
+			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
+
 		const float notesHeight = Engine::getNoteHeight() * 1.3f;
 		const float w = notesHeight / scaledAspectRatio;
 		const float noteTop = 1. + notesHeight, noteBottom = 1. - notesHeight;
@@ -395,8 +415,14 @@ namespace MikuMikuWorld
 
 		for (auto& tick : context.scorePreviewDrawData.drawingHoldTicks)
 		{
+			const Note& noteData = context.score.notes.at(tick.refID);
+			
+			// ★ 所属レイヤーの視覚的時間を使用
+			int layer = std::clamp(noteData.layer, 0, (int)context.score.layers.size() - 1);
+			double scaled_tm = layer_stm[layer];
+
 			if (scaled_tm < tick.visualTime.min || scaled_tm > tick.visualTime.max) continue;
-			int sprIndex = getNoteSpriteIndex(context.score.notes.at(tick.refID));
+			int sprIndex = getNoteSpriteIndex(noteData);
 			if (!isArrayIndexInBounds(sprIndex, texture.sprites)) continue;
 			const Sprite& sprite = texture.sprites[sprIndex];
 			float y = (float)Engine::approach(tick.visualTime.min, tick.visualTime.max, scaled_tm);
@@ -413,23 +439,30 @@ namespace MikuMikuWorld
 	{
 		const float total_tm = accumulateDuration(context.scorePreviewDrawData.maxTicks, TICKS_PER_BEAT, context.score.tempoChanges);
 		const double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
-		const double current_stm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges);
 		const float noteDuration = Engine::getNoteDuration(config.pvNoteSpeed);
-		const double visible_stm = current_stm + noteDuration;
 		const float mirror = config.pvMirrorScore ? -1 : 1;
 		const auto& drawData = context.scorePreviewDrawData;
 
+		// ★ 各レイヤーの視覚的時間をキャッシュ
+		std::vector<double> layer_stm(context.score.layers.size());
+		for (int i = 0; i < context.score.layers.size(); ++i)
+			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
+
 		for (auto& segment : drawData.drawingHoldSegments)
 		{
-			if ((std::min(segment.headTime, segment.tailTime) > visible_stm && segment.startTime > current_tm) || current_tm >= segment.endTime) continue;
-
 			const Note& holdEnd = context.score.notes.at(segment.endID);
 			const Note& holdStart = context.score.notes.at(holdEnd.parentID);
+			
+			// ★ ホールドの始点ノーツが所属するレイヤーの視覚的時間を使用
+			int layer = std::clamp(holdStart.layer, 0, (int)context.score.layers.size() - 1);
+			double current_stm = layer_stm[layer];
+			double visible_stm = current_stm + noteDuration;
+
 			float holdStartCenter = Engine::getNoteCenter(holdStart) * mirror;
 			bool isHoldActivated = current_tm >= segment.activeTime;
 			bool isSegmentActivated = current_tm >= segment.startTime;
 
-			// ★ テクスチャとスプライトインデックスの決定
+			// テクスチャとスプライトインデックスの決定
 			int textureID;
 			int sprIndex;
 			if (segment.isGuide)
@@ -453,6 +486,9 @@ namespace MikuMikuWorld
 			double segmentTail_stm = std::max(segment.headTime, segment.tailTime);
 			double segmentStart_stm = std::max(segmentHead_stm, current_stm);
 			double segmentEnd_stm = std::min(segmentTail_stm, visible_stm);
+			
+			if ((std::min(segment.headTime, segment.tailTime) > visible_stm && segment.startTime > current_tm) || current_tm >= segment.endTime) continue;
+
 			double segmentStartProgress, segmentEndProgress, holdStartProgress, holdEndProgress;
 
 			if (!isSegmentActivated)
@@ -526,13 +562,13 @@ namespace MikuMikuWorld
 				auto vPos = Engine::perspectiveQuadvPos(stepStartLeft, stepEndLeft, stepStartRight, stepEndRight, (float)stepTop, (float)stepBottom);
 
 				float spr_x1, spr_x2, spr_y1, spr_y2;
-				std::array<DirectX::XMFLOAT4, 4> vertexColors; // ★ 4頂点分のカラー
+				std::array<DirectX::XMFLOAT4, 4> vertexColors; // 4頂点分のカラー
 
 				if (segment.isGuide)
 				{
 					const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
 					
-					// ★ 手前(Start)と奥(End)で別々の進捗度を計算する
+					// 手前(Start)と奥(End)で別々の進捗度を計算する
 					double startProg = lerpD(holdStartProgress, holdEndProgress, from_percentage);
 					double endProg = lerpD(holdStartProgress, holdEndProgress, to_percentage);
 					
@@ -586,7 +622,6 @@ namespace MikuMikuWorld
 				}
 				else if (segment.isGuide)
 				{
-					// ★ ガイドノーツは頂点ごとのカラー配列を渡す新しいオーバーロードを呼ぶ
 					renderer->pushQuad(vPos, uv, model, vertexColors, (int)texture.getID(), zIndex);
 				}
 				else
@@ -809,7 +844,10 @@ void ScorePreviewWindow::drawFlickArrow(Renderer *renderer, const Note &note, fl
 		ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
 
 		float currentTm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
-		double currentScaledTm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges);
+		
+		// ★ ツールバーの表示用には、現在選択されているレイヤーの視覚的時間を用いる
+		int currentLayer = std::clamp(context.selectedLayer, 0, (int)context.score.layers.size() - 1);
+		double currentScaledTm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, currentLayer);
 		int currentMeasure = accumulateMeasures(context.currentTick, TICKS_PER_BEAT, context.score.timeSignatures);
 		const TimeSignature& ts = context.score.timeSignatures[findTimeSignature(currentMeasure, context.score.timeSignatures)];
 		const Tempo& tempo = getTempoAt(context.currentTick, context.score.tempoChanges);

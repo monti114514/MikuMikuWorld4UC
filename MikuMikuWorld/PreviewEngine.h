@@ -66,7 +66,7 @@ namespace MikuMikuWorld::Engine
 	std::array<DirectX::XMFLOAT4, 4> quadUV(const Sprite& sprite, const Texture& texture);
 
 	// 【追加】MMW4UC向けに、プレビュー用の時間計算関数をここに定義します
-	double accumulateScaledDuration(int tick, int beatTicks, const std::vector<Tempo>& tempos, const std::unordered_map<id_t, HiSpeedChange>& hiSpeeds);
+	double accumulateScaledDuration(int tick, int beatTicks, const std::vector<Tempo>& tempos, const std::unordered_map<id_t, HiSpeedChange>& hiSpeeds, int layer = 0);
 
 	Range getNoteVisualTime(Note const& note, Score const& score, float noteSpeed);
 
