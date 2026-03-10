@@ -25,7 +25,8 @@ namespace MikuMikuWorld
 			static std::array<DirectX::XMFLOAT4, 4> getMirrorCenterUV();
 		};
 		void updateDrawDefaultJacket(Renderer* renderer, const Jacket& jacket);
-		public:
+
+	public:
 		ScorePreviewBackground();
 		~ScorePreviewBackground();
 
@@ -40,7 +41,6 @@ namespace MikuMikuWorld
 		Framebuffer previewBuffer;
 		ScorePreviewBackground background;
 		float scaledAspectRatio;
-		Camera noteEffectsCamera;
 
 		mutable bool fullWindow{};
 
@@ -55,6 +55,7 @@ namespace MikuMikuWorld
 		void updateToolbar(ScoreEditorTimeline& timeline, ScoreContext& context) const;
 		float getScrollbarWidth() const;
 		void updateScrollbar(ScoreEditorTimeline& timeline, ScoreContext& context) const;
+
 	public:
 		ScorePreviewWindow(); 
 		~ScorePreviewWindow();
@@ -73,7 +74,5 @@ namespace MikuMikuWorld
 		void setFullWindow(bool fullScreen);
 		
 		inline bool isFullWindow() const { return fullWindow; };
-
-		// void loadNoteEffects(Effect::EffectView& effectView);
 	};
 }

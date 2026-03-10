@@ -40,7 +40,6 @@ namespace MikuMikuWorld
 			height = target_aspect_ratio > source_aspect_ratio ? target_width / (float)source_aspect_ratio : target_height;
 		}
 
-		// ★ 修正点：すべての描画に共通して使う単一のUVマッピング関数に統一しました（純正MMWのdrawQuadの仕様を再現）
 		inline std::array<DirectX::XMFLOAT4, 4> getUV(float left, float right, float top, float bottom)
 		{
 			return {{
@@ -226,7 +225,7 @@ namespace MikuMikuWorld
 		renderer->endBatch();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		// ★純正の正しい描画方向
+		
 		drawList->AddImage((ImTextureID)(size_t)previewBuffer.getTexture(), position, position + size, {0, 0}, {1, 1});
 	}
 

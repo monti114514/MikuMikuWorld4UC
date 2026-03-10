@@ -339,16 +339,22 @@ namespace MikuMikuWorld
 		ResourceManager::loadTexture(texturesDir + "timeline_flick_down_right.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_critical.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_trace.png");
-		for (auto color : guideColors)
-			for (auto fade : fadeTypes)
+		
+		for (const auto& color : guideColors)
+		{
+			for (const auto& fade : fadeTypes)
+			{
 				ResourceManager::loadTexture(
 				    appDir + IO::formatString("res\\textures\\timeline_guide_%s_%s.png", color,
 				                              std::string(fade).substr(5).c_str()));
+			}
+		}
 		ResourceManager::loadTexture(texturesDir + "timeline_damage.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_dummy.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_bpm.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_time_signature.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_hi_speed.png");
+		
 		// Cache note textures indices
 		noteTextures.notes = ResourceManager::getTexture(NOTES_TEX);
 		noteTextures.holdPath = ResourceManager::getTexture(HOLD_PATH_TEX);
@@ -356,7 +362,6 @@ namespace MikuMikuWorld
 		noteTextures.ccNotes = ResourceManager::getTexture(CC_NOTES_TEX);
 		noteTextures.guideColors = ResourceManager::getTexture(GUIDE_COLORS_TEX);
 		noteTextures.dummyNotes = ResourceManager::getTexture(DUMMY_RED_CROSS);
-
 
 		Localization::loadLanguages(appDir + "res\\i18n");
 	}

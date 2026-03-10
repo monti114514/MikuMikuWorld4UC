@@ -177,7 +177,6 @@
     <ClCompile Include="Background.cpp" />
     <ClCompile Include="BinaryReader.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
-    <ClCompile Include="EffectView.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="HistoryManager.cpp" />
     <ClCompile Include="ImGuiManager.cpp" />
@@ -202,7 +201,6 @@
     <ClCompile Include="Note.cpp" />
     <ClCompile Include="OpenGlLoader.cpp" />
     <ClCompile Include="NotesPreset.cpp" />
-    <ClCompile Include="Particle.cpp" />
     <ClCompile Include="PreviewData.cpp" />
     <ClCompile Include="PreviewEngine.cpp" />
     <ClCompile Include="Rendering\Camera.cpp" />
@@ -243,7 +241,6 @@
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="Colors.h" />
     <ClInclude Include="Constants.h" />
-    <ClInclude Include="EffectView.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="HistoryManager.h" />
     <ClInclude Include="IconsFontAwesome5.h" />
@@ -271,7 +268,6 @@
     <ClInclude Include="Note.h" />
     <ClInclude Include="NoteTypes.h" />
     <ClInclude Include="NotesPreset.h" />
-    <ClInclude Include="Particle.h" />
     <ClInclude Include="PreviewData.h" />
     <ClInclude Include="PreviewEngine.h" />
     <ClInclude Include="Rendering\AnchorType.h" />
