@@ -1,6 +1,8 @@
 #include "PreviewEngine.h"
 #include "Constants.h"
 #include "Tempo.h"
+#include <algorithm> // std::stable_sort のため
+#include <vector>
 
 namespace MikuMikuWorld
 {
@@ -32,11 +34,67 @@ namespace MikuMikuWorld
 
 namespace MikuMikuWorld::Engine
 {
-	// 【追加】仮の計算関数（Hi-Speed対応は後回しにして、まずは通常の時間計算を返す）
+	// ★ ハイスピード対応の心臓部
 	double accumulateScaledDuration(int tick, int beatTicks, const std::vector<Tempo>& tempos, const std::unordered_map<id_t, HiSpeedChange>& hiSpeeds)
 	{
-		// TODO: 将来的にMMW4UC独自の高度なHi-Speed計算をここに実装する
-		return accumulateDuration(tick, beatTicks, tempos);
+		if (hiSpeeds.empty())
+			return accumulateDuration(tick, beatTicks, tempos);
+
+		// 1. unordered_mapからvectorに変換し、Tick順に並べ替える
+		std::vector<HiSpeedChange> hsList;
+		hsList.reserve(hiSpeeds.size());
+		for (const auto& [id, hs] : hiSpeeds)
+			hsList.push_back(hs);
+
+		std::stable_sort(hsList.begin(), hsList.end(), [](const HiSpeedChange& a, const HiSpeedChange& b) {
+			return a.tick < b.tick;
+		});
+
+		double duration = 0.0;
+		int currentTick = 0;
+		int tempoIdx = 0;
+		int hsIdx = 0;
+
+		double currentBPM = tempos.empty() ? 120.0 : tempos[0].bpm;
+		float currentSpeed = 1.0f; 
+
+		// 2. 目標のTickに到達するまで、BPMとハイスピードの区間ごとに時間を積分する
+		while (currentTick < tick)
+		{
+			// 現在のTickに適用されるBPMを更新
+			while (tempoIdx + 1 < tempos.size() && tempos[tempoIdx + 1].tick <= currentTick)
+			{
+				tempoIdx++;
+				currentBPM = tempos[tempoIdx].bpm;
+			}
+
+			// 現在のTickに適用されるハイスピードを更新
+			while (hsIdx < hsList.size() && hsList[hsIdx].tick <= currentTick)
+			{
+				currentSpeed = hsList[hsIdx].speed;
+				hsIdx++;
+			}
+
+			// 次にBPMかハイスピードが変化するTickを計算
+			int nextTempoTick = (tempoIdx + 1 < tempos.size()) ? tempos[tempoIdx + 1].tick : tick;
+			int nextHSTick = (hsIdx < hsList.size()) ? hsList[hsIdx].tick : tick;
+
+			int nextBoundary = std::min({nextTempoTick, nextHSTick, tick});
+            
+			if (nextBoundary > currentTick)
+			{
+				double deltaTicks = (double)(nextBoundary - currentTick);
+				// 視覚的時間を進める： (小節の割合) * (1拍あたりの秒数) * (ハイスピード倍率)
+				duration += (deltaTicks / beatTicks) * (60.0 / currentBPM) * currentSpeed;
+				currentTick = nextBoundary;
+			}
+			else
+			{
+				break; // 無限ループ防止
+			}
+		}
+
+		return duration;
 	}
 
 	Range getNoteVisualTime(Note const& note, Score const& score, float noteSpeed)
@@ -86,7 +144,6 @@ namespace MikuMikuWorld::Engine
 
 	std::array<DirectX::XMFLOAT4, 4> quadUV(const Sprite& sprite, const Texture &texture)
 	{
-		// 【修正】MMW4UCのSprite仕様（getXとgetWidth）を用いた座標計算に変更
 		float left = sprite.getX() / texture.getWidth();
 		float right = (sprite.getX() + sprite.getWidth()) / texture.getWidth();
 		float top = sprite.getY() / texture.getHeight();

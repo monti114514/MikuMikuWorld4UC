@@ -409,7 +409,7 @@ namespace MikuMikuWorld
 		}
 	}
 
-	void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
+void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
 	{
 		const float total_tm = accumulateDuration(context.scorePreviewDrawData.maxTicks, TICKS_PER_BEAT, context.score.tempoChanges);
 		const double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
@@ -429,10 +429,23 @@ namespace MikuMikuWorld
 			bool isHoldActivated = current_tm >= segment.activeTime;
 			bool isSegmentActivated = current_tm >= segment.startTime;
 
-			int textureID = segment.isGuide ? noteTextures.touchLine : noteTextures.holdPath;
+			// ★ テクスチャとスプライトインデックスの決定
+			int textureID;
+			int sprIndex;
+			if (segment.isGuide)
+			{
+				textureID = noteTextures.guideColors;
+				const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
+				sprIndex = (int)hold.guideColor;
+			}
+			else
+			{
+				textureID = noteTextures.holdPath;
+				sprIndex = (!holdStart.critical ? 1 : 3);
+			}
+
 			if (textureID == -1) continue;
 			const Texture& texture = ResourceManager::textures[textureID];
-			const int sprIndex = (!holdStart.critical ? 1 : 3);
 			if (!isArrayIndexInBounds(sprIndex, texture.sprites)) continue;
 			const Sprite& segmentSprite = texture.sprites[sprIndex];
 
@@ -495,7 +508,7 @@ namespace MikuMikuWorld
 			double stepStartProgress = segmentStartProgress;
 
 			auto model = DirectX::XMMatrixIdentity();
-			float alpha = segment.isGuide ? config.pvGuideAlpha : config.pvHoldAlpha;
+			float baseAlpha = segment.isGuide ? config.pvGuideAlpha : config.pvHoldAlpha;
 			int zIndex = Engine::getZIndex(segment.isGuide ? SpriteLayer::GUIDE_PATH : SpriteLayer::HOLD_PATH, holdStartCenter, segment.activeTime / total_tm);
 
 			for (int i = 0; i < steps; i++)
@@ -513,12 +526,28 @@ namespace MikuMikuWorld
 				auto vPos = Engine::perspectiveQuadvPos(stepStartLeft, stepEndLeft, stepStartRight, stepEndRight, (float)stepTop, (float)stepBottom);
 
 				float spr_x1, spr_x2, spr_y1, spr_y2;
-				if (segment.isGuide)
+				float stepAlpha = baseAlpha; // ★ この描画ステップでの最終的なアルファ値
+
+if (segment.isGuide)
 				{
-					spr_x1 = segmentSprite.getX() + GUIDE_XCUTOFF;
-					spr_x2 = segmentSprite.getX() + segmentSprite.getWidth() - GUIDE_XCUTOFF;
-					spr_y1 = lerp(segmentSprite.getY() + segmentSprite.getHeight() - GUIDE_Y_BOTTOM_CUTOFF, segmentSprite.getY() + GUIDE_Y_TOP_CUTOFF, (float)lerpD(holdStartProgress, holdEndProgress, from_percentage));
-					spr_y2 = lerp(segmentSprite.getY() + segmentSprite.getHeight() - GUIDE_Y_BOTTOM_CUTOFF, segmentSprite.getY() + GUIDE_Y_TOP_CUTOFF, (float)lerpD(holdStartProgress, holdEndProgress, to_percentage));
+					const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
+					
+					// ★ フェード処理の計算
+					// このステップの中間地点におけるホールド全体の進捗度 [0.0 ~ 1.0]
+					double globalProgressMid = lerpD(holdStartProgress, holdEndProgress, (from_percentage + to_percentage) / 2.0);
+					
+					if (hold.fadeType == FadeType::Out)
+						stepAlpha *= (1.0f - (float)globalProgressMid);
+					else if (hold.fadeType == FadeType::In)
+						stepAlpha *= (float)globalProgressMid;
+					// FadeType::None の場合はそのまま
+
+					// ★ 旧仕様のカットオフ（GUIDE_XCUTOFF, GUIDE_Y_TOP_CUTOFF等）を削除し、
+					// スプライトの本来の領域のみを正確に切り抜く
+					spr_x1 = segmentSprite.getX();
+					spr_x2 = segmentSprite.getX() + segmentSprite.getWidth();
+					spr_y1 = lerp(segmentSprite.getY() + segmentSprite.getHeight(), segmentSprite.getY(), (float)lerpD(holdStartProgress, holdEndProgress, from_percentage));
+					spr_y2 = lerp(segmentSprite.getY() + segmentSprite.getHeight(), segmentSprite.getY(), (float)lerpD(holdStartProgress, holdEndProgress, to_percentage));
 				}
 				else
 				{
@@ -532,19 +561,22 @@ namespace MikuMikuWorld
 				float texH = (float)texture.getHeight();
 				auto uv = Utils::getUV(spr_x1 / texW, spr_x2 / texW, spr_y1 / texH, spr_y2 / texH);
 
-				if (config.pvHoldAnimation && isHoldActivated && isArrayIndexInBounds(sprIndex - 1, texture.sprites))
+				// ★ ガイドノーツはアニメーションさせない（!segment.isGuide を条件に追加）
+				if (config.pvHoldAnimation && isHoldActivated && !segment.isGuide && isArrayIndexInBounds(sprIndex - 1, texture.sprites))
 				{
 					const Sprite& activeSprite = texture.sprites[sprIndex - 1];
 					const int norm2ActiveOffset = (int)(activeSprite.getY() - segmentSprite.getY());
 					double delta_tm = current_tm - segment.activeTime;
 					float normalAplha = (std::cos((float)delta_tm * MATH_PI * 2.f) + 2.f) / 3.f;
 
-					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, alpha * normalAplha), (int)texture.getID(), zIndex);
+					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, stepAlpha * normalAplha), (int)texture.getID(), zIndex);
 					auto uvActive = Utils::getUV(spr_x1 / texW, spr_x2 / texW, (spr_y1 + norm2ActiveOffset) / texH, (spr_y2 + norm2ActiveOffset) / texH);
-					renderer->pushQuad(vPos, uvActive, model, toFloat4(defaultTint, alpha * (1.f - normalAplha)), (int)texture.getID(), zIndex);
+					renderer->pushQuad(vPos, uvActive, model, toFloat4(defaultTint, stepAlpha * (1.f - normalAplha)), (int)texture.getID(), zIndex);
 				}
 				else
-					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, alpha), (int)texture.getID(), zIndex);
+				{
+					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, stepAlpha), (int)texture.getID(), zIndex);
+				}
 
 				from_percentage = to_percentage;
 				stepStart_stm = stepEnd_stm;
@@ -556,9 +588,14 @@ namespace MikuMikuWorld
 
 	void ScorePreviewWindow::drawNoteBase(Renderer* renderer, const Note& note, float noteLeft, float noteRight, float y, float zScalar)
 	{
-		if (noteTextures.notes == -1) return;
-		const Texture& texture = getNoteTexture();
-		const int sprIndex = getNoteSpriteIndex(note);
+		// ★ ダメージノーツの場合は専用のテクスチャIDを使う
+		int textureID = note.getType() == NoteType::Damage ? noteTextures.ccNotes : noteTextures.notes;
+		if (textureID == -1) return;
+		const Texture& texture = ResourceManager::textures[textureID];
+
+		// ★ ダメージノーツの場合は専用のスプライトインデックス取得関数を使う
+		const int sprIndex = note.getType() == NoteType::Damage ? getCcNoteSpriteIndex(note) : getNoteSpriteIndex(note);
+		
 		if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
 		const Sprite& sprite = texture.sprites[sprIndex];
 
@@ -627,7 +664,7 @@ namespace MikuMikuWorld
 		renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint), (int)texture.getID(), zIndex);
 	}
 
-	void ScorePreviewWindow::drawFlickArrow(Renderer *renderer, const Note &note, float y, double time)
+void ScorePreviewWindow::drawFlickArrow(Renderer *renderer, const Note &note, float y, double time)
 	{
 		if (noteTextures.notes == -1) return;
 		const Texture& texture = getNoteTexture();
@@ -635,14 +672,18 @@ namespace MikuMikuWorld
 		if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
 		const Sprite& arrowSprite = texture.sprites[sprIndex];
 
-		size_t flickTransformIdx = std::clamp((int)note.width, 1, MAX_FLICK_SPRITES) - 1 + static_cast<int>((note.flick == FlickType::Left || note.flick == FlickType::Right) ? SpriteType::FlickArrowLeft : SpriteType::FlickArrowUp);
+		// ★ DownLeft, DownRight も左右フリックとして扱うように判定を追加
+		bool isLeftOrRight = (note.flick == FlickType::Left || note.flick == FlickType::Right || note.flick == FlickType::DownLeft || note.flick == FlickType::DownRight);
+		bool isRightward = (note.flick == FlickType::Right || note.flick == FlickType::DownRight);
+
+		size_t flickTransformIdx = std::clamp((int)note.width, 1, MAX_FLICK_SPRITES) - 1 + static_cast<int>(isLeftOrRight ? SpriteType::FlickArrowLeft : SpriteType::FlickArrowUp);
 		if (!isArrayIndexInBounds(flickTransformIdx, ResourceManager::spriteTransforms)) return;
 		const SpriteTransform& transform = ResourceManager::spriteTransforms[flickTransformIdx];
 
 		const int mirror = config.pvMirrorScore ? -1 : 1;
-		const int flickDirection = mirror * (note.flick == FlickType::Left ? -1 : (note.flick == FlickType::Right ? 1 : 0));
+		const int flickDirection = mirror * (isLeftOrRight ? (isRightward ? 1 : -1) : 0);
 		const float center = Engine::getNoteCenter(note) * mirror;
-		const float w = std::clamp((int)note.width, 1, MAX_FLICK_SPRITES) * (note.flick == FlickType::Right ? -1.f : 1.f) * mirror / 4.f;
+		const float w = std::clamp((int)note.width, 1, MAX_FLICK_SPRITES) * (isRightward ? -1.f : 1.f) * mirror / 4.f;
 		
 		auto vPos = transform.apply(Engine::quadvPos(center - w, center + w, 1.f, 1.f - 2.f * std::abs(w) * scaledAspectRatio));
 		
@@ -650,6 +691,15 @@ namespace MikuMikuWorld
 		float texH = (float)texture.getHeight();
 		auto uv = Utils::getUV(arrowSprite.getX() / texW, (arrowSprite.getX() + arrowSprite.getWidth()) / texW, arrowSprite.getY() / texH, (arrowSprite.getY() + arrowSprite.getHeight()) / texH);
 		
+		// ★ 下フリックの場合、UV座標のY軸を入れ替えて画像を上下反転させる
+		bool isDown = (note.flick >= FlickType::Down && note.flick <= FlickType::DownRight);
+		if (isDown)
+		{
+			// Utils::getUV は {右上, 右下, 左下, 左上} の順なので、0と1(右側)、3と2(左側)のY座標を入れ替える
+			std::swap(uv[0].y, uv[1].y);
+			std::swap(uv[3].y, uv[2].y);
+		}
+
 		int zIndex = Engine::getZIndex(SpriteLayer::FLICK_ARROW, center, y);
 		
 		if (config.pvFlickAnimation)
