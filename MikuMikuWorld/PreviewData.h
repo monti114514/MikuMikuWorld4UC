@@ -60,6 +60,22 @@ namespace MikuMikuWorld::Engine
 		float tailLeft, tailRight;
 		float startTime, endTime;
 		double activeTime;
+
+		int startTick;
+		int endTick;
+	};
+
+	struct HiSpeedCacheNode
+	{
+		int tick;
+		double stm;
+		double speedPerTick;
+	};
+
+	struct LayerHiSpeedCache
+	{
+		std::vector<HiSpeedCacheNode> nodes;
+		double getStm(int tick) const;
 	};
 
 	struct DrawData
@@ -70,6 +86,9 @@ namespace MikuMikuWorld::Engine
 		std::vector<DrawingLine> drawingLines;
 		std::vector<DrawingHoldTick> drawingHoldTicks;
 		std::vector<DrawingHoldSegment> drawingHoldSegments;
+
+		std::vector<LayerHiSpeedCache> hsCache;
+
 		// Effect::EffectView effectView; <- 削除しました
 
 		void clear();

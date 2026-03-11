@@ -402,7 +402,7 @@ namespace MikuMikuWorld
 		}
 	}
 
-void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *renderer)
+	void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *renderer)
 	{
 		if (noteTextures.notes == -1) return;
 		
@@ -448,17 +448,16 @@ void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *re
 		}
 	}
 
-void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
+	void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
 	{
 		const float total_tm = accumulateDuration(context.scorePreviewDrawData.maxTicks, TICKS_PER_BEAT, context.score.tempoChanges);
 		const double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
 		const float noteDuration = Engine::getNoteDuration(config.pvNoteSpeed);
-		const float mirror = config.pvMirrorScore ? -1 : 1;
 		const auto& drawData = context.scorePreviewDrawData;
 
 		std::vector<double> layer_stm(context.score.layers.size());
 		for (int i = 0; i < context.score.layers.size(); ++i)
-			layer_stm[i] = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, i);
+			layer_stm[i] = drawData.hsCache[i].getStm(context.currentTick);
 
 		for (auto& segment : drawData.drawingHoldSegments)
 		{
@@ -468,41 +467,21 @@ void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* r
 			int layer = std::clamp(holdStart.layer, 0, (int)context.score.layers.size() - 1);
 			double current_stm = layer_stm[layer];
 
-			// ★ 1. 時間的クリッピング：楽曲の絶対時間で判定済みなら描画しない
-			if (current_tm >= segment.endTime)
-				continue;
+			if (context.currentTick >= segment.endTick) continue;
 
-			// ★ 2. 現在判定線の上にある「進捗割合」を計算
 			double hitProgress = 0.0;
-			if (current_tm > segment.startTime)
-				hitProgress = std::clamp(unlerpD(segment.startTime, segment.endTime, current_tm), 0.0, 1.0);
+			if (context.currentTick > segment.startTick)
+				hitProgress = std::clamp(unlerpD(segment.startTick, segment.endTick, context.currentTick), 0.0, 1.0);
 
-			// ★ 3. 画面に映る範囲を計算（上下に少し余裕を持たせる）
-			double stm_top = current_stm + 1.2 * noteDuration;
-			double stm_bottom = current_stm - 0.2 * noteDuration;
+			double segmentStartProgress = hitProgress;
+			double segmentEndProgress = 1.0;
 
-			if (std::abs(segment.headTime - segment.tailTime) < 1e-6)
-				continue;
-				
-			double p_view_a = unlerpD(segment.headTime, segment.tailTime, stm_bottom);
-			double p_view_b = unlerpD(segment.headTime, segment.tailTime, stm_top);
-			double p_min = std::min(p_view_a, p_view_b);
-			double p_max = std::max(p_view_a, p_view_b);
+			if (segmentStartProgress >= segmentEndProgress) continue;
 
-			// ★ 4. 「判定線(hitProgress)」から「セグメント終端」の間で、かつ「画面内」の部分だけを描画範囲にする
-			double segmentStartProgress = std::max(hitProgress, p_min);
-			double segmentEndProgress = std::min(1.0, p_max);
-
-			if (segmentStartProgress >= segmentEndProgress)
-				continue;
-
-			// ★ 5. 決定した割合から描画用の視覚的時間(stm)を再計算（これでHsが負でも方向が壊れない）
-			double segmentStart_stm = lerpD(segment.headTime, segment.tailTime, segmentStartProgress);
-			double segmentEnd_stm = lerpD(segment.headTime, segment.tailTime, segmentEndProgress);
-
+			const float mirror = config.pvMirrorScore ? -1 : 1;
 			float holdStartCenter = Engine::getNoteCenter(holdStart) * mirror;
 			bool isHoldActivated = current_tm >= segment.activeTime;
-			bool isSegmentActivated = current_tm >= segment.startTime;
+			bool isSegmentActivated = context.currentTick >= segment.startTick;
 
 			int textureID;
 			int sprIndex;
@@ -523,9 +502,41 @@ void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* r
 			if (!isArrayIndexInBounds(sprIndex, texture.sprites)) continue;
 			const Sprite& segmentSprite = texture.sprites[sprIndex];
 
-			const int steps = (segment.ease == EaseType::Linear ? 10 : 15) + static_cast<int>(std::log(std::max(std::abs(segmentEnd_stm - segmentStart_stm) / noteDuration, 4.5399e-5)) + 0.5);
 			const auto ease = getEaseFunction(segment.ease);
 			float startLeft = segment.headLeft, startRight = segment.headRight, endLeft = segment.tailLeft, endRight = segment.tailRight;
+
+			// --- Sonolusアルゴリズム (connector_lib.py に実在する計算のみ) ---
+			int clampStartTick = lerpD(segment.startTick, segment.endTick, segmentStartProgress);
+			int clampEndTick = lerpD(segment.startTick, segment.endTick, segmentEndProgress);
+			double clampStart_stm = drawData.hsCache[layer].getStm(clampStartTick);
+			double clampEnd_stm = drawData.hsCache[layer].getStm(clampEndTick);
+
+			double start_y = Engine::approach(clampStart_stm - noteDuration, clampStart_stm, current_stm);
+			double end_y   = Engine::approach(clampEnd_stm - noteDuration, clampEnd_stm, current_stm);
+
+			int steps = 10;
+			if (segment.ease == EaseType::Linear)
+			{
+				double mid_travel = (start_y + end_y) / 2.0;
+				double perspective_factor = std::pow(std::max(0.1, mid_travel), 0.8);
+				
+				double x_diff_max = std::max(std::abs(startLeft - endLeft), std::abs(startRight - endRight));
+				double x_diff = (x_diff_max * 2.5 / perspective_factor) * std::abs(segmentEndProgress - segmentStartProgress);
+				
+				double curve_change_scale = std::pow(x_diff, 0.8);
+				double alpha_change_scale = 0.0; 
+				
+				// 余計な time_dist_scale を削除し、純粋なエンジンロジックに修正
+				double quality = 1.0;
+				steps = std::max(1, static_cast<int>(std::ceil(std::max(curve_change_scale, alpha_change_scale) * quality * 10.0)));
+			}
+			else
+			{
+				steps = 30; // 曲線は後続のステップで実装
+			}
+			
+			steps = std::clamp(steps, 1, 200);
+			// ---------------------------------------------------------------
 
 			if (isSegmentActivated && context.score.holdNotes.at(holdStart.ID).startType == HoldNoteType::Normal)
 			{
@@ -553,9 +564,11 @@ void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* r
 			}
 
 			double from_percentage = 0;
-			double stepStart_stm = segmentStart_stm;
-			double stepTop = Engine::approach(stepStart_stm - noteDuration, stepStart_stm, current_stm);
 			double stepStartProgress = segmentStartProgress;
+			
+			int stepStartTick = lerpD(segment.startTick, segment.endTick, stepStartProgress);
+			double stepStart_stm = drawData.hsCache[layer].getStm(stepStartTick);
+			double stepTop = Engine::approach(stepStart_stm - noteDuration, stepStart_stm, current_stm);
 
 			auto model = DirectX::XMMatrixIdentity();
 			float baseAlpha = segment.isGuide ? config.pvGuideAlpha : config.pvHoldAlpha;
@@ -564,9 +577,21 @@ void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* r
 			for (int i = 0; i < steps; i++)
 			{
 				double to_percentage = double(i + 1) / steps;
-				double stepEnd_stm = lerpD(segmentStart_stm, segmentEnd_stm, to_percentage);
-				double stepBottom = Engine::approach(stepEnd_stm - noteDuration, stepEnd_stm, current_stm);
 				double stepEndProgress = lerpD(segmentStartProgress, segmentEndProgress, to_percentage);
+				
+				int stepEndTick = lerpD(segment.startTick, segment.endTick, stepEndProgress);
+				double stepEnd_stm = drawData.hsCache[layer].getStm(stepEndTick);
+				double stepBottom = Engine::approach(stepEnd_stm - noteDuration, stepEnd_stm, current_stm);
+
+				// 独自実装のZ-Clipは削除。不可視領域の単純なスキップのみ（MMW4UC既存の負荷軽減策）
+				if (std::max(stepTop, stepBottom) < -0.2 || std::min(stepTop, stepBottom) > 1.2)
+				{
+					from_percentage = to_percentage;
+					stepStart_stm = stepEnd_stm;
+					stepTop = stepBottom;
+					stepStartProgress = stepEndProgress;
+					continue;
+				}
 
 				float stepStartLeft = ease(startLeft, endLeft, (float)stepStartProgress);
 				float   stepEndLeft = ease(startLeft, endLeft, (float)stepEndProgress);
@@ -633,6 +658,7 @@ void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* r
 				{
 					renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, baseAlpha), (int)texture.getID(), zIndex);
 				}
+				
 				from_percentage = to_percentage;
 				stepStart_stm = stepEnd_stm;
 				stepTop = stepBottom;

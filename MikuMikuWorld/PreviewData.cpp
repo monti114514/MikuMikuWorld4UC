@@ -7,9 +7,20 @@
 #include "Constants.h"
 #include "ResourceManager.h"
 #include "ScoreContext.h"
+#include <algorithm>
 
 namespace MikuMikuWorld::Engine
 {
+	double LayerHiSpeedCache::getStm(int tick) const
+	{
+		if (nodes.empty()) return 0.0;
+		auto it = std::upper_bound(nodes.begin(), nodes.end(), tick, [](int t, const HiSpeedCacheNode& node) {
+			return t < node.tick;
+		});
+		if (it != nodes.begin()) --it;
+		return it->stm + (tick - it->tick) * it->speedPerTick;
+	}
+
 	struct DrawingHoldStep
 	{
 		int tick;
@@ -26,6 +37,45 @@ namespace MikuMikuWorld::Engine
 		this->clear();
 		try
 		{
+			hsCache.clear();
+			hsCache.resize(score.layers.size());
+			for (int layer = 0; layer < score.layers.size(); ++layer)
+			{
+				std::vector<HiSpeedChange> hsList;
+				for (const auto& [id, hs] : score.hiSpeedChanges)
+					if (hs.layer == layer) hsList.push_back(hs);
+				
+				// ★ ここにソートを追加しました（これがないとハイスピードが正常に適用されません）
+				std::sort(hsList.begin(), hsList.end(), [](const HiSpeedChange& a, const HiSpeedChange& b) {
+					return a.tick < b.tick;
+				});
+
+				// テンポとHSが変化する全てのTick（境界点）を収集
+				std::vector<int> boundaries;
+				boundaries.push_back(0);
+				for (const auto& tempo : score.tempoChanges) boundaries.push_back(tempo.tick);
+				for (const auto& hs : hsList) boundaries.push_back(hs.tick);
+				std::sort(boundaries.begin(), boundaries.end());
+				boundaries.erase(std::unique(boundaries.begin(), boundaries.end()), boundaries.end());
+
+				// 各境界点における「正確な視覚的時間」と「次の境界までの速度」を計算して保存
+				for (int tick : boundaries)
+				{
+					double stm = accumulateScaledDuration(tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, layer);
+					
+					double bpm = 120.0;
+					for (auto it = score.tempoChanges.rbegin(); it != score.tempoChanges.rend(); ++it)
+						if (it->tick <= tick) { bpm = it->bpm; break; }
+
+					double speed = 1.0;
+					for (auto it = hsList.rbegin(); it != hsList.rend(); ++it)
+						if (it->tick <= tick) { speed = it->speed; break; }
+
+					double speedPerTick = (60.0 / bpm) * speed / TICKS_PER_BEAT;
+					hsCache[layer].nodes.push_back({ tick, stm, speedPerTick });
+				}
+			}
+
 			this->noteSpeed = 10.0f;
 
 			std::map<int, Range> simBuilder;
@@ -140,6 +190,7 @@ namespace MikuMikuWorld::Engine
 				tail.left, tail.right,
 				startTime, endTime,
 				activeTime,
+				head.tick, tail.tick
 			});
 			startTime = endTime;
 			
@@ -151,7 +202,7 @@ namespace MikuMikuWorld::Engine
 				if (skipNote.tick > tail.tick)
 					break;
 				double tickTime = accumulateScaledDuration(skipNote.tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, startNote.layer);
-				double tick_t = unlerpD(head.time, tail.time, tickTime);
+				double tick_t = unlerpD(head.tick, tail.tick, skipNote.tick);
 				float skipLeft = easeFunction(head.left, tail.left, tick_t);
 				float skipRight = easeFunction(head.right, tail.right, tick_t);
 				
