@@ -74,9 +74,15 @@ namespace MikuMikuWorld::Engine
 	{
 		return lerpD(0.35, 4.0, std::pow(unlerpD(12, 1, noteSpeed), 1.31));
 	}
+
 	static inline double approach(double start_time, double end_time, double current_time)
 	{
 		return std::pow(1.06, 45 * lerpD(-1, 0, unlerpD(start_time, end_time, current_time)));
+	}
+
+	static inline double approachProgress(double progress)
+	{
+		return std::pow(1.06, 45.0 * (progress - 1.0));
 	}
 	
 	inline constexpr float STAGE_LANE_TOP = 47;
