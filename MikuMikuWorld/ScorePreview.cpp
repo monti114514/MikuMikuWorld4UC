@@ -359,46 +359,121 @@ namespace MikuMikuWorld
 	}
 
 	void ScorePreviewWindow::drawLines(const ScoreContext& context, Renderer* renderer)
+{
+	if (!config.pvSimultaneousLine || noteTextures.notes == -1) return;
+	
+	const auto& drawData = context.scorePreviewDrawData.drawingLines;
+
+	const Texture& texture = getNoteTexture();
+	size_t sprIndex = SPR_SIMULTANEOUS_CONNECTION;
+	if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
+	const Sprite& sprite = texture.sprites[sprIndex];
+
+	size_t transIndex = static_cast<size_t>(SpriteType::SimultaneousLine);
+	if (!isArrayIndexInBounds(transIndex, ResourceManager::spriteTransforms)) return;
+	const SpriteTransform& lineTransform = ResourceManager::spriteTransforms[transIndex];
+	
+	float texW = (float)texture.getWidth();
+	float texH = (float)texture.getHeight();
+	float noteDuration = Engine::getNoteDuration(config.pvNoteSpeed);
+
+	const float noteTop = 1.f + Engine::getNoteHeight();
+	const float noteBottom = 1.f - Engine::getNoteHeight();
+
+	for (auto& line : drawData)
 	{
-		if (!config.pvSimultaneousLine || noteTextures.notes == -1) return;
-		
-		int currentLayer = std::clamp(context.selectedLayer, 0, (int)context.score.layers.size() - 1);
-		double scaled_tm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, currentLayer);
-		
-		const auto& drawData = context.scorePreviewDrawData.drawingLines;
+		double left_stm = Engine::accumulateScaledDuration(line.leftTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, line.leftLayer);
+		double right_stm = Engine::accumulateScaledDuration(line.rightTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, line.rightLayer);
 
-		const Texture& texture = getNoteTexture();
-		size_t sprIndex = SPR_SIMULTANEOUS_CONNECTION;
-		if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
-		const Sprite& sprite = texture.sprites[sprIndex];
+		double current_left_stm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, line.leftLayer);
+		double current_right_stm = Engine::accumulateScaledDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges, context.score.hiSpeedChanges, line.rightLayer);
 
-		size_t transIndex = static_cast<size_t>(SpriteType::SimultaneousLine);
-		if (!isArrayIndexInBounds(transIndex, ResourceManager::spriteTransforms)) return;
-		const SpriteTransform& lineTransform = ResourceManager::spriteTransforms[transIndex];
+		double left_progress = 1.0 - (left_stm - current_left_stm) / noteDuration;
+		double right_progress = 1.0 - (right_stm - current_right_stm) / noteDuration;
 
-		const float noteTop = 1. + Engine::getNoteHeight(), noteBottom = 1. - Engine::getNoteHeight();
-		float texW = (float)texture.getWidth();
-		float texH = (float)texture.getHeight();
+		if (left_progress < 0.0 && right_progress < 0.0) continue;
+		if (left_progress > 1.0 && right_progress > 1.0) continue;
+		if ((left_progress < 1.0 && 1.0 < right_progress) || (left_progress > 1.0 && 1.0 > right_progress)) continue;
 
-		for (auto& line : drawData)
+		double adj_left_progress = std::clamp(left_progress, 0.0, 1.0);
+		double adj_right_progress = std::clamp(right_progress, 0.0, 1.0);
+
+		float adj_left_lane = line.leftLane;
+		float adj_right_lane = line.rightLane;
+
+		if (std::abs(left_progress - right_progress) > 1e-6)
 		{
-			if (context.currentTick > line.tick)
-				continue;
-
-			float y = (float)Engine::approach(line.visualTime.min, line.visualTime.max, scaled_tm);
-			
-			//  Y座標クリッピング
-			if (y < -0.1 || y > 1.2) continue;
-
-			float noteLeft = line.xPos.min, noteRight = line.xPos.max;
-			if (config.pvMirrorScore) std::swap(noteLeft *= -1, noteRight *= -1);
-			
-			auto vPos = lineTransform.apply(Engine::perspectiveQuadvPos(noteLeft, noteRight, noteTop, noteBottom));
-			auto uv = Utils::getUV(sprite.getX() / texW, (sprite.getX() + sprite.getWidth()) / texW, sprite.getY() / texH, (sprite.getY() + sprite.getHeight()) / texH);
-			
-			renderer->pushQuad(vPos, uv, DirectX::XMMatrixScaling(y, y, 1.f), toFloat4(defaultTint), (int)texture.getID(), Engine::getZIndex(SpriteLayer::UNDER_NOTE_EFFECT, 0, y));
+			double adj_left_frac = unlerpD(left_progress, right_progress, adj_left_progress);
+			double adj_right_frac = unlerpD(left_progress, right_progress, adj_right_progress);
+			adj_left_lane = lerpD(line.leftLane, line.rightLane, adj_left_frac);
+			adj_right_lane = lerpD(line.leftLane, line.rightLane, adj_right_frac);
 		}
+
+		float adj_left_travel = Engine::approachProgress(adj_left_progress);
+		float adj_right_travel = Engine::approachProgress(adj_right_progress);
+
+		if (std::abs(adj_left_lane - adj_right_lane) < 1e-6 && std::abs(adj_left_travel - adj_right_travel) < 1e-6)
+			continue;
+
+		if (adj_left_lane > adj_right_lane)
+		{
+			std::swap(adj_left_lane, adj_right_lane);
+			std::swap(adj_left_travel, adj_right_travel);
+			std::swap(left_progress, right_progress); // フェード計算用に進行度もスワップ
+		}
+
+		// =========================================================================
+		// 【修正1】laneToLeftの二重掛けバグを解消！
+		// すでにノーツの中心物理座標が入っているので、そのまま使用します。
+		// =========================================================================
+		float noteLeft = adj_left_lane;
+		float noteRight = adj_right_lane;
+
+		if (config.pvMirrorScore)
+		{
+			noteLeft *= -1.f;
+			noteRight *= -1.f;
+			std::swap(noteLeft, noteRight);
+			std::swap(adj_left_travel, adj_right_travel);
+		}
+
+		// =========================================================================
+		// 【修正2】純正MMWのパース処理を維持したまま、左右を独立して拡大・縮小(travel)する
+		// =========================================================================
+		// まずは純正の台形（3Dパース前）を作る
+		auto rawPos = Engine::perspectiveQuadvPos(noteLeft, noteRight, noteTop, noteBottom);
+		
+		// カメラ行列を通して正しい画面座標空間に持ってくる
+		auto vPos = lineTransform.apply(rawPos);
+
+		// 各頂点が「左側」か「右側」かを元のX座標から判別して、個別の進行度(travel)を掛ける
+		// これにより、ハイスピードで左右のY座標がズレた場合に「斜めの同時押し線」が正確に描画されます
+		for (int i = 0; i < 4; ++i)
+		{
+			if (std::abs(rawPos[i].x - noteLeft) < std::abs(rawPos[i].x - noteRight))
+			{
+				vPos[i].x *= adj_left_travel;
+				vPos[i].y *= adj_left_travel;
+			}
+			else
+			{
+				vPos[i].x *= adj_right_travel;
+				vPos[i].y *= adj_right_travel;
+			}
+		}
+
+		float progress_diff = std::abs(left_progress - right_progress);
+		float fade_alpha = std::clamp(unlerpD(1.0, 0.5, progress_diff), 0.0, 1.0);
+		
+		auto uv = Utils::getUV(sprite.getX() / texW, (sprite.getX() + sprite.getWidth()) / texW, sprite.getY() / texH, (sprite.getY() + sprite.getHeight()) / texH);
+		
+		float center_y = (adj_left_travel + adj_right_travel) / 2.0f;
+		int zIndex = Engine::getZIndex(SpriteLayer::UNDER_NOTE_EFFECT, 0, center_y);
+
+		// すでに頂点はスケール計算済みなので、DirectX::XMMatrixIdentity() をそのまま渡します
+		renderer->pushQuad(vPos, uv, DirectX::XMMatrixIdentity(), toFloat4(defaultTint, fade_alpha), (int)texture.getID(), zIndex);
 	}
+}
 
 	void ScorePreviewWindow::drawHoldTicks(const ScoreContext &context, Renderer *renderer)
 	{
@@ -447,7 +522,7 @@ namespace MikuMikuWorld
 	}
 
 	void ScorePreviewWindow::drawHoldCurves(const ScoreContext& context, Renderer* renderer)
-{
+	{
 	const float total_tm = accumulateDuration(context.scorePreviewDrawData.maxTicks, TICKS_PER_BEAT, context.score.tempoChanges);
 	const double current_tm = accumulateDuration(context.currentTick, TICKS_PER_BEAT, context.score.tempoChanges);
 	const float noteDuration = Engine::getNoteDuration(config.pvNoteSpeed);
@@ -487,7 +562,7 @@ namespace MikuMikuWorld
 			start_time = current_tm;
 		}
 
-		double stm_top = current_stm + 1.2 * noteDuration;
+		double stm_top = current_stm + 1.0 * noteDuration;
 		double stm_bottom = current_stm - 0.2 * noteDuration;
 
 		// 画面に映る範囲のみを計算するカリング処理（元のコードの考え方と同じ）

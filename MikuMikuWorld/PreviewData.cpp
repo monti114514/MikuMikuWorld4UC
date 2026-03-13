@@ -45,7 +45,6 @@ namespace MikuMikuWorld::Engine
 				for (const auto& [id, hs] : score.hiSpeedChanges)
 					if (hs.layer == layer) hsList.push_back(hs);
 				
-				// ★ ここにソートを追加しました（これがないとハイスピードが正常に適用されません）
 				std::sort(hsList.begin(), hsList.end(), [](const HiSpeedChange& a, const HiSpeedChange& b) {
 					return a.tick < b.tick;
 				});
@@ -78,7 +77,10 @@ namespace MikuMikuWorld::Engine
 
 			this->noteSpeed = 10.0f;
 
-			std::map<int, Range> simBuilder;
+			// =========================================================================
+			// 【変更】同じTickに存在するノーツの <中心X座標, レイヤー> のリストを保持する
+			// =========================================================================
+			std::map<int, std::vector<std::pair<float, int>>> simBuilder;
 			
 			for (const auto& [id, note] : score.notes)
 			{
@@ -98,26 +100,37 @@ namespace MikuMikuWorld::Engine
 				auto visual_tm = getNoteVisualTime(note, score, noteSpeed);
 				drawingNotes.push_back(DrawingNote{note.ID, visual_tm, type, note.dummy, note.layer});
 
+				// 同時押し線構築のためにリストに追加する
 				float center = getNoteCenter(note);
-				auto&& [it, has_emplaced] = simBuilder.try_emplace(note.tick, Range{center, center});
-				auto& x_range = it->second;
-				if (has_emplaced)
-					continue;
-				if (center < x_range.min)
-					x_range.min = center;
-				if (center > x_range.max)
-					x_range.max = center;
+				simBuilder[note.tick].push_back({center, note.layer});
 			}
 
-			float noteDuration = getNoteDuration(noteSpeed);
-			for (const auto& [line_tick, x_range] : simBuilder)
+			// =========================================================================
+			// 【変更】実機仕様：左右のノーツの情報を抽出して DrawingLine を構築する
+			// =========================================================================
+			for (const auto& [line_tick, notesAtTick] : simBuilder)
 			{
-				if (x_range.min != x_range.max)
+				// 同じTickに2つ以上のノーツがある場合
+				if (notesAtTick.size() > 1)
 				{
-					// 同時押しラインはとりあえずレイヤー0を基準とする
-					double targetTime = accumulateScaledDuration(line_tick, TICKS_PER_BEAT, score.tempoChanges, score.hiSpeedChanges, 0);
-					// 末尾に line_tick を追加
-					drawingLines.push_back(DrawingLine{ x_range, Range{ targetTime - getNoteDuration(noteSpeed), targetTime }, line_tick });
+					// そのTickにあるノーツの中で、一番左と一番右のノーツを探す
+					auto minmax = std::minmax_element(notesAtTick.begin(), notesAtTick.end(), [](const auto& a, const auto& b) {
+						return a.first < b.first;
+					});
+					
+					// 左右の座標が違う（完全に重なっていない）場合のみ同時押し線を生成
+					if (minmax.first->first != minmax.second->first)
+					{
+						drawingLines.push_back(DrawingLine{
+							line_tick,           // leftTick
+							minmax.first->first, // leftLane
+							minmax.first->second,// leftLayer
+
+							line_tick,            // rightTick
+							minmax.second->first, // rightLane
+							minmax.second->second // rightLayer
+						});
+					}
 				}
 			}
 

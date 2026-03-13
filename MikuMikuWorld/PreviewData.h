@@ -29,11 +29,16 @@ namespace MikuMikuWorld::Engine
 		int layer;
 	};
 
+	// 【修正版】実機仕様に合わせた同時押し線のデータ構造
 	struct DrawingLine
 	{
-		Range xPos;
-		Range visualTime;
-		int tick;
+		int leftTick;
+		float leftLane;
+		int leftLayer;
+
+		int rightTick;
+		float rightLane;
+		int rightLayer;
 	};
 
 	struct DrawingHoldTick
