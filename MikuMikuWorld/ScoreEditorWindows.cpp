@@ -1719,191 +1719,368 @@ namespace MikuMikuWorld
 	{
 		if (ImGui::Begin(IMGUI_TITLE(ICON_FA_LAYER_GROUP, "layers")))
 		{
-			int moveUpPattern = -1;
-			int moveDownPattern = -1;
-			int mergePattern = -1;
 			int toggleHideIndex = -1;
+			int soloIndex = -1;
+			int deleteIndex = -1;
+			int dragDropFrom = -1;
+			int dragDropTo = -1;
+			int dragDropType = -1; // 0: 上, 1: 中(フォルダ内), 2: 下
 
 			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 			float layersButtonHeight = ImGui::GetFrameHeight();
-			float windowHeight = ImGui::GetContentRegionAvail().y - layersButtonHeight * 2 -
-			                     ImGui::GetStyle().WindowPadding.y * 2;
+
+			// =====================================================================
+			// 上部アイコンバー
+			// =====================================================================
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 4));
+
+			if (UI::transparentButton(ICON_FA_PLUS, ImVec2(layersButtonHeight, layersButtonHeight), false))
+			{
+				dialogOpen = true; renameIndex = -1; layerName.clear();
+			}
+			UI::tooltip(getString("create_layer"));
+			ImGui::SameLine();
+
+			if (UI::transparentButton(ICON_FA_FOLDER_PLUS, ImVec2(layersButtonHeight, layersButtonHeight), false))
+			{
+				dialogOpen = true; renameIndex = -2; layerName.clear();
+			}
+			UI::tooltip("Create Folder");
+			ImGui::SameLine();
 
 			bool showAllLayers = context.showAllLayers;
-
-			if (showAllLayers)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button,
-				                      ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-				                      ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-			}
-			if (ImGui::Button(getString("show_all_layers"), ImVec2(-1, layersButtonHeight)))
-			{
+			if (showAllLayers) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_PlotLinesHovered));
+			if (UI::transparentButton(ICON_FA_EYE, ImVec2(layersButtonHeight, layersButtonHeight), false))
 				context.showAllLayers = !context.showAllLayers;
-			}
-			if (showAllLayers)
-				ImGui::PopStyleColor(2);
+			if (showAllLayers) ImGui::PopStyleColor();
+			UI::tooltip(getString("show_all_layers"));
+
+			ImGui::PopStyleVar();
+			ImGui::Separator();
+
+			float windowHeight = ImGui::GetContentRegionAvail().y - ImGui::GetStyle().WindowPadding.y;
 
 			if (ImGui::BeginChild("layers_child_window", ImVec2(-1, windowHeight), true))
 			{
-				int index = -1;
-				for (const auto& layer : context.score.layers)
+				bool hideChildren = false;
+
+				for (int index = 0; index < context.score.layers.size(); ++index)
 				{
-					++index;
+					const auto& layer = context.score.layers[index];
+
+					if (layer.isFolder) hideChildren = layer.isCollapsed;
+					else if (!layer.inFolder) hideChildren = false;
+
+					if (layer.inFolder && hideChildren) continue;
+
 					ImGui::PushID(index);
+					ImVec2 startPos = ImGui::GetCursorScreenPos();
+					float width = ImGui::GetContentRegionAvail().x;
+					bool isSelected = (index == context.selectedLayer);
 
-					int isSelected = index == context.selectedLayer;
-
+					// 【改善5】選択中アイテムの明瞭化
 					if (isSelected)
 					{
-						ImGui::PushStyleColor(ImGuiCol_Button,
-						                      ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-						ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-						                      ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+						ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+						ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
 					}
-					if (ImGui::Button(layer.name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x -
-					                                                 UI::btnSmall.x * 5 - 2.0f * 6,
-					                                             layersButtonHeight)))
+
+					if (ImGui::Selectable((std::string("##row_") + std::to_string(index)).c_str(), isSelected, ImGuiSelectableFlags_AllowItemOverlap, ImVec2(width, layersButtonHeight)))
+					{
 						context.selectedLayer = index;
-					if (isSelected)
-						ImGui::PopStyleColor(2);
-
-					ImGui::SameLine();
-
-					if (UI::transparentButton(layer.hidden ? ICON_FA_EYE_SLASH : ICON_FA_EYE,
-					                          ImVec2(UI::btnSmall.x, layersButtonHeight), false))
-					{
-						toggleHideIndex = index;
 					}
-					UI::tooltip(layer.hidden ? getString("layer_show") : getString("layer_hide"));
 
-					ImGui::SameLine();
-					if (UI::transparentButton(ICON_FA_PENCIL_ALT,
-					                          ImVec2(UI::btnSmall.x, layersButtonHeight), false))
+					if (isSelected) ImGui::PopStyleColor(2);
+
+					if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					{
 						renameIndex = index;
 						layerName = layer.name;
 						dialogOpen = true;
 					}
-					UI::tooltip(getString("layer_rename"));
 
-					bool isFirst = index == 0;
+					// =====================================================================
+					// 【改善4】ドラッグ＆ドロップの3段階インジケーター
+					// =====================================================================
+					int currentDropType = -1;
+					if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+					{
+						ImGui::SetDragDropPayload("LAYER_REORDER", &index, sizeof(int));
+						ImGui::Text("%s %s", layer.isFolder ? ICON_FA_FOLDER : ICON_FA_FILE, layer.name.c_str());
+						ImGui::EndDragDropSource();
+					}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::GetDragDropPayload())
+						{
+							if (payload->IsDataType("LAYER_REORDER"))
+							{
+								ImVec2 min = ImGui::GetItemRectMin();
+								ImVec2 max = ImGui::GetItemRectMax();
+								float itemHeight = max.y - min.y;
+								float mouseY = ImGui::GetMousePos().y - min.y;
+
+								if (layer.isFolder && mouseY > itemHeight * 0.25f && mouseY < itemHeight * 0.75f) {
+									currentDropType = 1; // フォルダの中央 (囲み枠)
+								} else if (mouseY < itemHeight * 0.5f) {
+									currentDropType = 0; // 上半分 (上線)
+								} else {
+									currentDropType = 2; // 下半分 (下線)
+								}
+
+								// 赤いインジケーターの描画
+								ImU32 redColor = IM_COL32(255, 80, 80, 255);
+								if (currentDropType == 0) ImGui::GetWindowDrawList()->AddLine(ImVec2(min.x, min.y), ImVec2(max.x, min.y), redColor, 2.0f);
+								else if (currentDropType == 2) ImGui::GetWindowDrawList()->AddLine(ImVec2(min.x, max.y), ImVec2(max.x, max.y), redColor, 2.0f);
+								else ImGui::GetWindowDrawList()->AddRect(min, max, redColor, 0.0f, 0, 2.0f);
+							}
+						}
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("LAYER_REORDER", ImGuiDragDropFlags_AcceptNoDrawDefaultRect))
+						{
+							dragDropFrom = *(const int*)payload->Data;
+							dragDropTo = index;
+							dragDropType = currentDropType;
+						}
+						ImGui::EndDragDropTarget();
+					}
+
+					ImGui::SetCursorScreenPos(ImVec2(startPos.x + ImGui::GetStyle().FramePadding.x, startPos.y));
+					
+					float indent = layer.inFolder ? 24.0f : 0.0f;
+					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + indent);
+
+					// =====================================================================
+					// 【改善2 & 3】階層ツリー線（隙間ゼロ化 ＆ 終端の └）
+					// =====================================================================
+					if (layer.inFolder)
+					{
+						bool isLastChild = true;
+						for (int j = index + 1; j < context.score.layers.size(); ++j)
+						{
+							if (context.score.layers[j].inFolder) { isLastChild = false; break; }
+							if (context.score.layers[j].isFolder) break;
+							break;
+						}
+
+						float lineX = startPos.x + 14.0f;
+						float spaceY = ImGui::GetStyle().ItemSpacing.y;
+						float topY = startPos.y - spaceY * 0.5f; // 上の行と完全に繋げる
+						float midY = startPos.y + (layersButtonHeight * 0.5f);
+						float bottomY = startPos.y + layersButtonHeight + spaceY * 0.5f; // 下の行と完全に繋げる
+
+						ImU32 lineColor = IM_COL32(120, 120, 120, 255);
+						// 縦線（最後なら中央で止める＝└の形になる）
+						ImGui::GetWindowDrawList()->AddLine(ImVec2(lineX, topY), ImVec2(lineX, isLastChild ? midY : bottomY), lineColor, 1.0f);
+						// 横線
+						ImGui::GetWindowDrawList()->AddLine(ImVec2(lineX, midY), ImVec2(lineX + 10.0f, midY), lineColor, 1.0f);
+					}
+
+					// 【改善1】フォルダアイコンを白色に
+					ImVec2 caretSize = ImVec2(ImGui::CalcTextSize(ICON_FA_CARET_DOWN).x + 4.0f, layersButtonHeight);
+					if (layer.isFolder)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+						if (ImGui::Button(layer.isCollapsed ? ICON_FA_CARET_RIGHT : ICON_FA_CARET_DOWN, caretSize))
+							context.score.layers[index].isCollapsed = !layer.isCollapsed;
+						ImGui::PopStyleColor();
+						ImGui::SameLine();
+						ImGui::AlignTextToFramePadding();
+						ImGui::Text("%s", ICON_FA_FOLDER); // 色指定を削除
+						ImGui::SameLine();
+					}
+					else
+					{
+						ImGui::SetCursorPosX(ImGui::GetCursorPosX() + caretSize.x + ImGui::GetStyle().ItemSpacing.x);
+					}
+
+					ImGui::AlignTextToFramePadding();
+					ImGui::Text("%s", layer.name.c_str());
+
+					float rightPanelWidth = UI::btnSmall.x * 3 + ImGui::GetStyle().ItemSpacing.x * 2 + 10.0f;
+					ImGui::SameLine(width - rightPanelWidth);
+
+					if (UI::transparentButton(layer.hidden ? ICON_FA_EYE_SLASH : ICON_FA_EYE, ImVec2(UI::btnSmall.x, layersButtonHeight), false))
+						toggleHideIndex = index;
+
 					ImGui::SameLine();
-					if (UI::transparentButton(ICON_FA_CHEVRON_UP,
-					                          ImVec2(UI::btnSmall.x, layersButtonHeight), false,
-					                          !isFirst))
-						moveUpPattern = index;
-					UI::tooltip(getString("layer_up"));
-
-					int isLast = index == context.score.layers.size() - 1;
-					ImGui::SameLine();
-					if (UI::transparentButton(ICON_FA_CHEVRON_DOWN,
-					                          ImVec2(UI::btnSmall.x, layersButtonHeight), false,
-					                          !isLast))
-						moveDownPattern = index;
-					UI::tooltip(getString("layer_down"));
+					if (!layer.isFolder) {
+						if (ImGui::Button("S", ImVec2(UI::btnSmall.x, layersButtonHeight))) soloIndex = index;
+					} else {
+						ImGui::Dummy(ImVec2(UI::btnSmall.x, layersButtonHeight));
+					}
 
 					ImGui::SameLine();
-					if (UI::transparentButton(ICON_FA_LEVEL_DOWN_ALT,
-					                          ImVec2(UI::btnSmall.x, layersButtonHeight), false,
-					                          !isLast))
-						mergePattern = index;
-					UI::tooltip(getString("layer_merge"));
+					if (UI::transparentButton(ICON_FA_TRASH, ImVec2(UI::btnSmall.x, layersButtonHeight), false))
+						deleteIndex = index;
 
+					ImGui::SetCursorScreenPos(ImVec2(startPos.x, startPos.y + layersButtonHeight + ImGui::GetStyle().ItemSpacing.y));
 					ImGui::PopID();
 				}
 			}
 			ImGui::EndChild();
-			ImGui::Separator();
-
-			if (ImGui::Button(getString("create_layer"), ImVec2(-1, layersButtonHeight)))
-			{
-				dialogOpen = true;
-				renameIndex = -1;
-				layerName.clear();
-			}
-
 			ImGui::PopStyleColor();
 
-			if (moveUpPattern != -1)
+			// ドラッグ＆ドロップの適用ロジック
+			if (dragDropFrom != -1 && dragDropTo != -1)
 			{
 				Score prev = context.score;
-				std::swap(context.score.layers[moveUpPattern],
-				          context.score.layers[moveUpPattern - 1]);
-				for (auto& [_, note] : context.score.notes)
-				{
-					if (note.layer == moveUpPattern)
-						note.layer = moveUpPattern - 1;
-					else if (note.layer == moveUpPattern - 1)
-						note.layer = moveUpPattern;
+				
+				int srcStart = dragDropFrom;
+				int srcCount = 1;
+				if (context.score.layers[srcStart].isFolder) {
+					while (srcStart + srcCount < context.score.layers.size() && context.score.layers[srcStart + srcCount].inFolder) {
+						srcCount++;
+					}
 				}
-				for (auto& [_, hiSpeed] : context.score.hiSpeedChanges)
+				
+				int insertPos = dragDropTo;
+				bool newInFolder = false;
+
+				if (dragDropType == 1) // フォルダの中へ
 				{
-					if (hiSpeed.layer == moveUpPattern)
-						hiSpeed.layer = moveUpPattern - 1;
-					else if (hiSpeed.layer == moveUpPattern - 1)
-						hiSpeed.layer = moveUpPattern;
+					insertPos = dragDropTo + 1;
+					newInFolder = true;
 				}
-				context.pushHistory("Change Layer Order", prev, context.score);
+				else if (dragDropType == 0) // 上へ
+				{
+					insertPos = dragDropTo;
+					newInFolder = context.score.layers[dragDropTo].inFolder;
+				}
+				else // 下へ
+				{
+					insertPos = dragDropTo + 1;
+					newInFolder = context.score.layers[dragDropTo].inFolder;
+				}
+
+				if (!(insertPos >= srcStart && insertPos <= srcStart + srcCount))
+				{
+					if (!context.score.layers[srcStart].isFolder) {
+						context.score.layers[srcStart].inFolder = newInFolder;
+					}
+
+					std::vector<int> oldIndices(context.score.layers.size());
+					for (int i = 0; i < oldIndices.size(); ++i) oldIndices[i] = i;
+					
+					std::vector<int> oldBlock(oldIndices.begin() + srcStart, oldIndices.begin() + srcStart + srcCount);
+					oldIndices.erase(oldIndices.begin() + srcStart, oldIndices.begin() + srcStart + srcCount);
+					if (insertPos > srcStart) insertPos -= srcCount;
+					oldIndices.insert(oldIndices.begin() + insertPos, oldBlock.begin(), oldBlock.end());
+					
+					std::unordered_map<int, int> oldToNew;
+					for (int newIdx = 0; newIdx < oldIndices.size(); ++newIdx) oldToNew[oldIndices[newIdx]] = newIdx;
+
+					std::vector<Layer> newLayers(context.score.layers.size());
+					for (int i = 0; i < oldIndices.size(); ++i) {
+						newLayers[i] = context.score.layers[oldIndices[i]];
+					}
+					context.score.layers = newLayers;
+
+					for (auto& [_, note] : context.score.notes) note.layer = oldToNew[note.layer];
+					for (auto& [_, hiSpeed] : context.score.hiSpeedChanges) hiSpeed.layer = oldToNew[hiSpeed.layer];
+					context.selectedLayer = oldToNew[context.selectedLayer];
+
+					context.pushHistory("Reorder Layers/Folders", prev, context.score);
+				}
 			}
 
-			if (moveDownPattern != -1)
+			// === 削除処理（変更なし） ===
+			if (deleteIndex != -1)
 			{
-				Score prev = context.score;
-				std::swap(context.score.layers[moveDownPattern],
-				          context.score.layers[moveDownPattern + 1]);
-				for (auto& [_, note] : context.score.notes)
-				{
-					if (note.layer == moveDownPattern)
-						note.layer = moveDownPattern + 1;
-					else if (note.layer == moveDownPattern + 1)
-						note.layer = moveDownPattern;
+				int delCount = 1;
+				if (context.score.layers[deleteIndex].isFolder) {
+					while (deleteIndex + delCount < context.score.layers.size() && context.score.layers[deleteIndex + delCount].inFolder) {
+						delCount++;
+					}
 				}
-				for (auto& [_, hiSpeed] : context.score.hiSpeedChanges)
-				{
-					if (hiSpeed.layer == moveDownPattern)
-						hiSpeed.layer = moveDownPattern + 1;
-					else if (hiSpeed.layer == moveDownPattern + 1)
-						hiSpeed.layer = moveDownPattern;
-				}
-				context.pushHistory("Change Layer Order", prev, context.score);
-			}
 
-			if (mergePattern != -1)
-			{
-				Score prev = context.score;
-				context.score.layers.erase(context.score.layers.begin() + mergePattern);
-				for (auto& [_, note] : context.score.notes)
+				if (context.score.layers.size() - delCount >= 1)
 				{
-					if (note.layer > mergePattern)
-						note.layer -= 1;
+					Score prev = context.score;
+
+					std::unordered_set<int> notesToDelete;
+					for (const auto& [id, note] : context.score.notes) {
+						if (note.layer >= deleteIndex && note.layer < deleteIndex + delCount) notesToDelete.insert(id);
+					}
+
+					for (auto id : notesToDelete) {
+						auto notePos = context.score.notes.find(id);
+						if (notePos == context.score.notes.end()) continue;
+
+						Note& note = notePos->second;
+						if (note.getType() != NoteType::Hold && note.getType() != NoteType::HoldEnd) {
+							if (note.getType() == NoteType::HoldMid && context.score.holdNotes.count(note.parentID)) {
+								std::vector<HoldStep>& steps = context.score.holdNotes.at(note.parentID).steps;
+								auto stepIt = std::find_if(steps.cbegin(), steps.cend(), [id](const HoldStep& s) { return s.ID == id; });
+								if (stepIt != steps.cend()) steps.erase(stepIt);
+							}
+							context.score.notes.erase(id);
+						} else {
+							const HoldNote& hold = context.score.holdNotes.at(note.getType() == NoteType::Hold ? note.ID : note.parentID);
+							context.score.notes.erase(hold.start.ID);
+							context.score.notes.erase(hold.end);
+							for (const auto& step : hold.steps) context.score.notes.erase(step.ID);
+							context.score.holdNotes.erase(hold.start.ID);
+						}
+					}
+
+					std::unordered_set<int> hiSpeedsToDelete;
+					for (const auto& [id, hs] : context.score.hiSpeedChanges) {
+						if (hs.layer >= deleteIndex && hs.layer < deleteIndex + delCount) hiSpeedsToDelete.insert(id);
+					}
+					for (auto id : hiSpeedsToDelete) context.score.hiSpeedChanges.erase(id);
+
+					for (auto it = context.selectedNotes.begin(); it != context.selectedNotes.end(); ) {
+						if (!context.score.notes.count(*it)) it = context.selectedNotes.erase(it);
+						else ++it;
+					}
+					for (auto it = context.selectedHiSpeedChanges.begin(); it != context.selectedHiSpeedChanges.end(); ) {
+						if (!context.score.hiSpeedChanges.count(*it)) it = context.selectedHiSpeedChanges.erase(it);
+						else ++it;
+					}
+
+					context.score.layers.erase(context.score.layers.begin() + deleteIndex, context.score.layers.begin() + deleteIndex + delCount);
+					for (auto& [_, note] : context.score.notes) if (note.layer >= deleteIndex + delCount) note.layer -= delCount;
+					for (auto& [_, hiSpeed] : context.score.hiSpeedChanges) if (hiSpeed.layer >= deleteIndex + delCount) hiSpeed.layer -= delCount;
+					
+					if (context.selectedLayer >= deleteIndex && context.selectedLayer < deleteIndex + delCount) context.selectedLayer = 0;
+					else if (context.selectedLayer >= deleteIndex + delCount) context.selectedLayer -= delCount;
+
+					context.pushHistory("Delete Layer/Folder", prev, context.score);
 				}
-				for (auto& [_, hiSpeed] : context.score.hiSpeedChanges)
-				{
-					if (hiSpeed.layer > mergePattern)
-						hiSpeed.layer -= 1;
-				}
-				if (context.selectedLayer > mergePattern)
-					context.selectedLayer -= 1;
-				context.pushHistory("Merge Layer", prev, context.score);
 			}
 
 			if (toggleHideIndex != -1)
 			{
 				Score prev = context.score;
-				auto& layer = context.score.layers.at(toggleHideIndex);
+				auto& layer = context.score.layers[toggleHideIndex];
 				layer.hidden = !layer.hidden;
+				
+				if (layer.isFolder) {
+					for (int i = toggleHideIndex + 1; i < context.score.layers.size(); ++i) {
+						if (!context.score.layers[i].inFolder) break;
+						context.score.layers[i].hidden = layer.hidden;
+					}
+				}
 				context.pushHistory("Toggle Hide Layer", prev, context.score);
+			}
+
+			if (soloIndex != -1)
+			{
+				Score prev = context.score;
+				for (int i = 0; i < context.score.layers.size(); ++i)
+					context.score.layers[i].hidden = (i != soloIndex);
+				context.pushHistory("Solo Layer", prev, context.score);
 			}
 		}
 
 		ImGui::End();
 
+		// 以下はポップアップ呼び出し処理（変更なし）
 		if (dialogOpen)
 		{
-			ImGui::OpenPopup(renameIndex >= 0 ? MODAL_TITLE("layer_rename")
-			                                  : MODAL_TITLE("create_layer"));
+			if (renameIndex == -2) ImGui::OpenPopup("Create Folder");
+			else if (renameIndex >= 0) ImGui::OpenPopup(MODAL_TITLE("layer_rename"));
+			else ImGui::OpenPopup(MODAL_TITLE("create_layer"));
 			dialogOpen = false;
 		}
 
@@ -1912,18 +2089,21 @@ namespace MikuMikuWorld
 			if (renameIndex >= 0)
 			{
 				context.score.layers[renameIndex].name = layerName;
-				renameIndex = -1;
 			}
 			else
 			{
-				context.score.layers.push_back(Layer{ layerName });
-
-				id_t id = getNextHiSpeedID();
-				context.score.hiSpeedChanges[id] = {
-					id, 0, 1, static_cast<int>(context.score.layers.size()) - 1
-				};
-				layerName.clear();
+				Layer newLayer;
+				newLayer.name = layerName;
+				newLayer.isFolder = (renameIndex == -2);
+				context.score.layers.push_back(newLayer);
+				
+				if (!newLayer.isFolder) {
+					id_t id = getNextHiSpeedID();
+					context.score.hiSpeedChanges[id] = { id, 0, 1, static_cast<int>(context.score.layers.size()) - 1 };
+				}
 			}
+			renameIndex = -1;
+			layerName.clear();
 		}
 	}
 
@@ -1935,9 +2115,16 @@ namespace MikuMikuWorld
 		                        ImVec2(0.5f, 0.5f));
 		ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Always);
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-		if (ImGui::BeginPopupModal(renameIndex >= 0 ? MODAL_TITLE("layer_rename")
-		                                            : MODAL_TITLE("create_layer"),
-		                           NULL, ImGuiWindowFlags_NoResize))
+		
+		bool popupOpened = false;
+		if (renameIndex == -2)
+			popupOpened = ImGui::BeginPopupModal("Create Folder", NULL, ImGuiWindowFlags_NoResize);
+		else if (renameIndex >= 0)
+			popupOpened = ImGui::BeginPopupModal(MODAL_TITLE("layer_rename"), NULL, ImGuiWindowFlags_NoResize);
+		else
+			popupOpened = ImGui::BeginPopupModal(MODAL_TITLE("create_layer"), NULL, ImGuiWindowFlags_NoResize);
+
+		if (popupOpened)
 		{
 			ImVec2 padding = ImGui::GetStyle().WindowPadding;
 			ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
@@ -1945,15 +2132,20 @@ namespace MikuMikuWorld
 			float xPos = padding.x;
 			float yPos = ImGui::GetWindowSize().y - UI::btnSmall.y - 2.0f - (padding.y * 2);
 
-			ImGui::Text("%s", getString("layer_name"));
+			if (renameIndex == -2)
+				ImGui::Text("Folder Name");
+			else
+				ImGui::Text("%s", getString("layer_name")); // 余計な .c_str() を削除
+
 			ImGui::SetNextItemWidth(-1);
 			ImGui::InputText("##layer_name", &layerName);
 
 			ImVec2 btnSz{ (ImGui::GetContentRegionAvail().x - spacing.x - (padding.x * 0.5f)) /
-				              2.0f,
-				          ImGui::GetFrameHeight() };
+			                  2.0f,
+			              ImGui::GetFrameHeight() };
 			ImGui::SetCursorPos(ImVec2(xPos, yPos));
-			if (ImGui::Button(getString("cancel"), btnSz))
+			
+			if (ImGui::Button(getString("cancel"), btnSz)) // 余計な .c_str() を削除
 			{
 				result = DialogResult::Cancel;
 				ImGui::CloseCurrentPopup();
@@ -1962,7 +2154,8 @@ namespace MikuMikuWorld
 			ImGui::SameLine();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !layerName.size());
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1 - (0.5f * !layerName.size()));
-			if (ImGui::Button(getString("confirm"), btnSz))
+			
+			if (ImGui::Button(getString("confirm"), btnSz)) // 余計な .c_str() を削除
 			{
 				result = DialogResult::Ok;
 				ImGui::CloseCurrentPopup();

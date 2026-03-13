@@ -29,6 +29,11 @@ namespace MikuMikuWorld
 	{
 		std::string name;
 		bool hidden = false;
+
+		// --- フォルダ機能用の拡張 ---
+		bool isFolder = false;    // 自分が「フォルダ」であるかどうか
+		bool inFolder = false;    // 自分が直上のフォルダに「属している」かどうか
+		bool isCollapsed = false; // フォルダが折りたたまれているかどうか（UI用）
 	};
 
 	struct Waypoint

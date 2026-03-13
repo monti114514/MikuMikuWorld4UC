@@ -369,6 +369,7 @@ namespace MikuMikuWorld
 	if (!isArrayIndexInBounds(sprIndex, texture.sprites)) return;
 	const Sprite& sprite = texture.sprites[sprIndex];
 
+	// ★ 純正通り SimultaneousLine を使用
 	size_t transIndex = static_cast<size_t>(SpriteType::SimultaneousLine);
 	if (!isArrayIndexInBounds(transIndex, ResourceManager::spriteTransforms)) return;
 	const SpriteTransform& lineTransform = ResourceManager::spriteTransforms[transIndex];
@@ -377,8 +378,9 @@ namespace MikuMikuWorld
 	float texH = (float)texture.getHeight();
 	float noteDuration = Engine::getNoteDuration(config.pvNoteSpeed);
 
-	const float noteTop = 1.f + Engine::getNoteHeight();
-	const float noteBottom = 1.f - Engine::getNoteHeight();
+	// ★ 純正と完全に同じ計算式 (1 + h と 1 - h) に戻して裏返りを修正
+	const float noteTop = 1.0f + Engine::getNoteHeight();
+	const float noteBottom = 1.0f - Engine::getNoteHeight();
 
 	for (auto& line : drawData)
 	{
@@ -419,13 +421,9 @@ namespace MikuMikuWorld
 		{
 			std::swap(adj_left_lane, adj_right_lane);
 			std::swap(adj_left_travel, adj_right_travel);
-			std::swap(left_progress, right_progress); // フェード計算用に進行度もスワップ
 		}
 
-		// =========================================================================
-		// 【修正1】laneToLeftの二重掛けバグを解消！
-		// すでにノーツの中心物理座標が入っているので、そのまま使用します。
-		// =========================================================================
+		// laneToLeft の二重変換を排し、構築済みの物理座標をそのまま使用
 		float noteLeft = adj_left_lane;
 		float noteRight = adj_right_lane;
 
@@ -437,41 +435,29 @@ namespace MikuMikuWorld
 			std::swap(adj_left_travel, adj_right_travel);
 		}
 
-		// =========================================================================
-		// 【修正2】純正MMWのパース処理を維持したまま、左右を独立して拡大・縮小(travel)する
-		// =========================================================================
-		// まずは純正の台形（3Dパース前）を作る
+		// ★ 純正の `auto vPos = lineTransform.apply(Engine::perspectiveQuadvPos(...));` を完全再現
 		auto rawPos = Engine::perspectiveQuadvPos(noteLeft, noteRight, noteTop, noteBottom);
-		
-		// カメラ行列を通して正しい画面座標空間に持ってくる
 		auto vPos = lineTransform.apply(rawPos);
 
-		// 各頂点が「左側」か「右側」かを元のX座標から判別して、個別の進行度(travel)を掛ける
-		// これにより、ハイスピードで左右のY座標がズレた場合に「斜めの同時押し線」が正確に描画されます
-		for (int i = 0; i < 4; ++i)
-		{
-			if (std::abs(rawPos[i].x - noteLeft) < std::abs(rawPos[i].x - noteRight))
-			{
-				vPos[i].x *= adj_left_travel;
-				vPos[i].y *= adj_left_travel;
-			}
-			else
-			{
-				vPos[i].x *= adj_right_travel;
-				vPos[i].y *= adj_right_travel;
-			}
-		}
+		// ★ 純正の `DirectX::XMMatrixScaling(y, y, 1.f)` を、左右独立して適用
+		vPos[0].x *= adj_right_travel; vPos[0].y *= adj_right_travel;
+		vPos[1].x *= adj_right_travel; vPos[1].y *= adj_right_travel;
+		
+		vPos[2].x *= adj_left_travel;  vPos[2].y *= adj_left_travel;
+		vPos[3].x *= adj_left_travel;  vPos[3].y *= adj_left_travel;
 
-		float progress_diff = std::abs(left_progress - right_progress);
-		float fade_alpha = std::clamp(unlerpD(1.0, 0.5, progress_diff), 0.0, 1.0);
+		auto uv = Utils::getUV(
+			sprite.getX() / texW, 
+			(sprite.getX() + sprite.getWidth()) / texW, 
+			sprite.getY() / texH, 
+			(sprite.getY() + sprite.getHeight()) / texH
+		);
 		
-		auto uv = Utils::getUV(sprite.getX() / texW, (sprite.getX() + sprite.getWidth()) / texW, sprite.getY() / texH, (sprite.getY() + sprite.getHeight()) / texH);
-		
+		// ★ 純正の Z-Index と Tint を完全再現
 		float center_y = (adj_left_travel + adj_right_travel) / 2.0f;
 		int zIndex = Engine::getZIndex(SpriteLayer::UNDER_NOTE_EFFECT, 0, center_y);
 
-		// すでに頂点はスケール計算済みなので、DirectX::XMMatrixIdentity() をそのまま渡します
-		renderer->pushQuad(vPos, uv, DirectX::XMMatrixIdentity(), toFloat4(defaultTint, fade_alpha), (int)texture.getID(), zIndex);
+		renderer->pushQuad(vPos, uv, DirectX::XMMatrixIdentity(), toFloat4(defaultTint), (int)texture.getID(), zIndex);
 	}
 }
 

@@ -70,5 +70,5 @@
 0,600,436,258
 # notes_flick_arrow_crtcl_06_diagonal.png
 0,300,514,300
-# Simultaneous_connection_line
-998,1432,10,40
+# Simultaneous_connection_line.png
+996,1428,14,44
