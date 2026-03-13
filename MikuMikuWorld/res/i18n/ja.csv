@@ -2,7 +2,7 @@
 # key, value
 
 language_name, 日本語
-translator, 名無し｡（@sevenc_nanashi@voskey.icalo.net）、Mint（@MI11435）
+translator, 名無ししししししししししっし｡（@sevenc_nanashi@voskey.icalo.net）、Mint（@MI11435）
 
 # menu bar
 file, ファイル
@@ -289,3 +289,40 @@ timeline_time_signature, タイムライン「拍子」
 timeline_hi_speed, タイムライン「ハイスピード」
 zoom_in, ズームイン
 zoom_out, ズームアウト
+
+# --- プレビュー・キーコンフィグ関連（純正MMWの公式翻訳） ---
+preview, プレビュー
+notes_speed, ノーツの速さ
+mirror_score, ミラー譜面
+preview_draw_toolbar, プレビューツールバーを描く
+background_brightnes, 背景の明るさ
+stage_opacity, ステージの不透明度
+stage_cover, ステージカバー（縦方向）
+visuals, ビジュアル
+flicks_animation, マーカーのアニメーション
+holds_animation, ロングノーツのアニメーション
+simultaneous_lines, 同時押しライン
+holds_alpha, ロングノーツの不透明度
+guides_alpha, ガイドノーツの不透明度
+action, コマンド
+keys, キー
+add, 追加
+remove, 削除
+none, 無し
+cmd_key_listen, 入力待ち中
+key_config, キーコンフィグ
+
+# レイヤー・しおり関連
+new_layer, 新規レイヤー
+new_folder, 新規フォルダ
+create_folder, フォルダを作成
+layer_merge_confirm, レイヤーの結合
+layer_merge_msg, このレイヤーを一つ下のレイヤーと結合しますか？
+layer_delete_confirm, レイヤーの削除
+layer_delete_msg1, 本当にこのレイヤーを削除しますか？
+layer_delete_msg2, 内部のノーツも全て削除されます。
+sort_asc, 昇順にソート
+sort_desc, 降順にソート
+new_waypoint, 新規しおり
+name, 名前
+time, 時間

@@ -1717,14 +1717,27 @@ namespace MikuMikuWorld
 
 	void LayersWindow::update(ScoreContext& context)
 	{
+		static int activeSoloIndex = -1;
+		static std::vector<bool> preSoloHiddenStates;
+		static bool focusRenameInput = false;
+
+		static size_t lastLayerCount = context.score.layers.size();
+		if (lastLayerCount != context.score.layers.size()) {
+			activeSoloIndex = -1;
+			preSoloHiddenStates.clear();
+			lastLayerCount = context.score.layers.size();
+		}
+
+		bool doMergeLayer = false;
+		bool doDeleteLayer = false;
+
 		if (ImGui::Begin(IMGUI_TITLE(ICON_FA_LAYER_GROUP, "layers")))
 		{
 			int toggleHideIndex = -1;
 			int soloIndex = -1;
-			int deleteIndex = -1;
 			int dragDropFrom = -1;
 			int dragDropTo = -1;
-			int dragDropType = -1; // 0: 上, 1: 中(フォルダ内), 2: 下
+			int dragDropType = -1; 
 
 			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 			float layersButtonHeight = ImGui::GetFrameHeight();
@@ -1734,20 +1747,6 @@ namespace MikuMikuWorld
 			// =====================================================================
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 4));
 
-			if (UI::transparentButton(ICON_FA_PLUS, ImVec2(layersButtonHeight, layersButtonHeight), false))
-			{
-				dialogOpen = true; renameIndex = -1; layerName.clear();
-			}
-			UI::tooltip(getString("create_layer"));
-			ImGui::SameLine();
-
-			if (UI::transparentButton(ICON_FA_FOLDER_PLUS, ImVec2(layersButtonHeight, layersButtonHeight), false))
-			{
-				dialogOpen = true; renameIndex = -2; layerName.clear();
-			}
-			UI::tooltip("Create Folder");
-			ImGui::SameLine();
-
 			bool showAllLayers = context.showAllLayers;
 			if (showAllLayers) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_PlotLinesHovered));
 			if (UI::transparentButton(ICON_FA_EYE, ImVec2(layersButtonHeight, layersButtonHeight), false))
@@ -1755,8 +1754,64 @@ namespace MikuMikuWorld
 			if (showAllLayers) ImGui::PopStyleColor();
 			UI::tooltip(getString("show_all_layers"));
 
+			float rightWidth = (layersButtonHeight * 4.0f) + (4.0f * 3.0f);
+			ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - rightWidth);
+
+			if (UI::transparentButton(ICON_FA_PLUS, ImVec2(layersButtonHeight, layersButtonHeight), false))
+			{
+				Layer newLayer;
+				newLayer.name = getString("new_layer"); // 日本語化
+				newLayer.isFolder = false;
+				context.score.layers.push_back(newLayer);
+				
+				id_t id = getNextHiSpeedID();
+				context.score.hiSpeedChanges[id] = { id, 0, 1, static_cast<int>(context.score.layers.size()) - 1 };
+				
+				renameIndex = context.score.layers.size() - 1;
+				layerName = newLayer.name;
+				context.selectedLayer = renameIndex;
+				focusRenameInput = true;
+			}
+			UI::tooltip(getString("create_layer"));
+			ImGui::SameLine();
+
+			if (UI::transparentButton(ICON_FA_FOLDER_PLUS, ImVec2(layersButtonHeight, layersButtonHeight), false))
+			{
+				Layer newLayer;
+				newLayer.name = getString("new_folder"); // 日本語化
+				newLayer.isFolder = true;
+				context.score.layers.push_back(newLayer);
+				
+				renameIndex = context.score.layers.size() - 1;
+				layerName = newLayer.name;
+				context.selectedLayer = renameIndex;
+				focusRenameInput = true;
+			}
+			UI::tooltip(getString("create_folder")); // 日本語化
+			ImGui::SameLine();
+
+			bool canMerge = context.selectedLayer >= 0 && context.selectedLayer < context.score.layers.size() - 1 && !context.score.layers[context.selectedLayer].isFolder;
+			if (!canMerge) ImGui::BeginDisabled();
+			if (UI::transparentButton(ICON_FA_LEVEL_DOWN_ALT, ImVec2(layersButtonHeight, layersButtonHeight), false))
+			{
+				ImGui::OpenPopup(getString("layer_merge_confirm")); // 日本語化
+			}
+			if (!canMerge) ImGui::EndDisabled();
+			UI::tooltip(getString("layer_merge"));
+			ImGui::SameLine();
+
+			bool canDelete = context.selectedLayer >= 0 && context.score.layers.size() > 1;
+			if (!canDelete) ImGui::BeginDisabled();
+			if (UI::transparentButton(ICON_FA_TRASH, ImVec2(layersButtonHeight, layersButtonHeight), false))
+			{
+				ImGui::OpenPopup(getString("layer_delete_confirm")); // 日本語化
+			}
+			if (!canDelete) ImGui::EndDisabled();
+			UI::tooltip(getString("delete"));
+
 			ImGui::PopStyleVar();
 			ImGui::Separator();
+			// =====================================================================
 
 			float windowHeight = ImGui::GetContentRegionAvail().y - ImGui::GetStyle().WindowPadding.y;
 
@@ -1778,7 +1833,6 @@ namespace MikuMikuWorld
 					float width = ImGui::GetContentRegionAvail().x;
 					bool isSelected = (index == context.selectedLayer);
 
-					// 【改善5】選択中アイテムの明瞭化
 					if (isSelected)
 					{
 						ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
@@ -1796,12 +1850,9 @@ namespace MikuMikuWorld
 					{
 						renameIndex = index;
 						layerName = layer.name;
-						dialogOpen = true;
+						focusRenameInput = true;
 					}
 
-					// =====================================================================
-					// 【改善4】ドラッグ＆ドロップの3段階インジケーター
-					// =====================================================================
 					int currentDropType = -1;
 					if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 					{
@@ -1820,15 +1871,10 @@ namespace MikuMikuWorld
 								float itemHeight = max.y - min.y;
 								float mouseY = ImGui::GetMousePos().y - min.y;
 
-								if (layer.isFolder && mouseY > itemHeight * 0.25f && mouseY < itemHeight * 0.75f) {
-									currentDropType = 1; // フォルダの中央 (囲み枠)
-								} else if (mouseY < itemHeight * 0.5f) {
-									currentDropType = 0; // 上半分 (上線)
-								} else {
-									currentDropType = 2; // 下半分 (下線)
-								}
+								if (layer.isFolder && mouseY > itemHeight * 0.25f && mouseY < itemHeight * 0.75f) currentDropType = 1;
+								else if (mouseY < itemHeight * 0.5f) currentDropType = 0;
+								else currentDropType = 2;
 
-								// 赤いインジケーターの描画
 								ImU32 redColor = IM_COL32(255, 80, 80, 255);
 								if (currentDropType == 0) ImGui::GetWindowDrawList()->AddLine(ImVec2(min.x, min.y), ImVec2(max.x, min.y), redColor, 2.0f);
 								else if (currentDropType == 2) ImGui::GetWindowDrawList()->AddLine(ImVec2(min.x, max.y), ImVec2(max.x, max.y), redColor, 2.0f);
@@ -1849,9 +1895,6 @@ namespace MikuMikuWorld
 					float indent = layer.inFolder ? 24.0f : 0.0f;
 					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + indent);
 
-					// =====================================================================
-					// 【改善2 & 3】階層ツリー線（隙間ゼロ化 ＆ 終端の └）
-					// =====================================================================
 					if (layer.inFolder)
 					{
 						bool isLastChild = true;
@@ -1864,18 +1907,15 @@ namespace MikuMikuWorld
 
 						float lineX = startPos.x + 14.0f;
 						float spaceY = ImGui::GetStyle().ItemSpacing.y;
-						float topY = startPos.y - spaceY * 0.5f; // 上の行と完全に繋げる
+						float topY = startPos.y - spaceY * 0.5f;
 						float midY = startPos.y + (layersButtonHeight * 0.5f);
-						float bottomY = startPos.y + layersButtonHeight + spaceY * 0.5f; // 下の行と完全に繋げる
+						float bottomY = startPos.y + layersButtonHeight + spaceY * 0.5f;
 
 						ImU32 lineColor = IM_COL32(120, 120, 120, 255);
-						// 縦線（最後なら中央で止める＝└の形になる）
 						ImGui::GetWindowDrawList()->AddLine(ImVec2(lineX, topY), ImVec2(lineX, isLastChild ? midY : bottomY), lineColor, 1.0f);
-						// 横線
 						ImGui::GetWindowDrawList()->AddLine(ImVec2(lineX, midY), ImVec2(lineX + 10.0f, midY), lineColor, 1.0f);
 					}
 
-					// 【改善1】フォルダアイコンを白色に
 					ImVec2 caretSize = ImVec2(ImGui::CalcTextSize(ICON_FA_CARET_DOWN).x + 4.0f, layersButtonHeight);
 					if (layer.isFolder)
 					{
@@ -1885,7 +1925,7 @@ namespace MikuMikuWorld
 						ImGui::PopStyleColor();
 						ImGui::SameLine();
 						ImGui::AlignTextToFramePadding();
-						ImGui::Text("%s", ICON_FA_FOLDER); // 色指定を削除
+						ImGui::Text("%s", ICON_FA_FOLDER);
 						ImGui::SameLine();
 					}
 					else
@@ -1893,10 +1933,46 @@ namespace MikuMikuWorld
 						ImGui::SetCursorPosX(ImGui::GetCursorPosX() + caretSize.x + ImGui::GetStyle().ItemSpacing.x);
 					}
 
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("%s", layer.name.c_str());
+					float rightPanelWidth = UI::btnSmall.x * 2 + ImGui::GetStyle().ItemSpacing.x * 1 + 10.0f;
 
-					float rightPanelWidth = UI::btnSmall.x * 3 + ImGui::GetStyle().ItemSpacing.x * 2 + 10.0f;
+					if (renameIndex == index)
+					{
+						ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - rightPanelWidth - 10.0f);
+						
+						if (focusRenameInput)
+						{
+							ImGui::SetKeyboardFocusHere();
+							focusRenameInput = false;
+						}
+						
+						if (ImGui::InputText((std::string("##rename_") + std::to_string(index)).c_str(), &layerName, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
+						{
+							Score prev = context.score;
+							context.score.layers[index].name = layerName;
+							renameIndex = -1;
+							context.pushHistory("Rename Layer", prev, context.score);
+						}
+						else if (ImGui::IsItemDeactivated())
+						{
+							if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+							{
+								renameIndex = -1;
+							}
+							else
+							{
+								Score prev = context.score;
+								context.score.layers[index].name = layerName;
+								renameIndex = -1;
+								context.pushHistory("Rename Layer", prev, context.score);
+							}
+						}
+					}
+					else
+					{
+						ImGui::AlignTextToFramePadding();
+						ImGui::Text("%s", layer.name.c_str());
+					}
+
 					ImGui::SameLine(width - rightPanelWidth);
 
 					if (UI::transparentButton(layer.hidden ? ICON_FA_EYE_SLASH : ICON_FA_EYE, ImVec2(UI::btnSmall.x, layersButtonHeight), false))
@@ -1904,14 +1980,12 @@ namespace MikuMikuWorld
 
 					ImGui::SameLine();
 					if (!layer.isFolder) {
+						if (activeSoloIndex == index) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_PlotLinesHovered));
 						if (ImGui::Button("S", ImVec2(UI::btnSmall.x, layersButtonHeight))) soloIndex = index;
+						if (activeSoloIndex == index) ImGui::PopStyleColor();
 					} else {
 						ImGui::Dummy(ImVec2(UI::btnSmall.x, layersButtonHeight));
 					}
-
-					ImGui::SameLine();
-					if (UI::transparentButton(ICON_FA_TRASH, ImVec2(UI::btnSmall.x, layersButtonHeight), false))
-						deleteIndex = index;
 
 					ImGui::SetCursorScreenPos(ImVec2(startPos.x, startPos.y + layersButtonHeight + ImGui::GetStyle().ItemSpacing.y));
 					ImGui::PopID();
@@ -1920,7 +1994,6 @@ namespace MikuMikuWorld
 			ImGui::EndChild();
 			ImGui::PopStyleColor();
 
-			// ドラッグ＆ドロップの適用ロジック
 			if (dragDropFrom != -1 && dragDropTo != -1)
 			{
 				Score prev = context.score;
@@ -1936,18 +2009,13 @@ namespace MikuMikuWorld
 				int insertPos = dragDropTo;
 				bool newInFolder = false;
 
-				if (dragDropType == 1) // フォルダの中へ
-				{
+				if (dragDropType == 1) {
 					insertPos = dragDropTo + 1;
 					newInFolder = true;
-				}
-				else if (dragDropType == 0) // 上へ
-				{
+				} else if (dragDropType == 0) {
 					insertPos = dragDropTo;
 					newInFolder = context.score.layers[dragDropTo].inFolder;
-				}
-				else // 下へ
-				{
+				} else {
 					insertPos = dragDropTo + 1;
 					newInFolder = context.score.layers[dragDropTo].inFolder;
 				}
@@ -1983,72 +2051,6 @@ namespace MikuMikuWorld
 				}
 			}
 
-			// === 削除処理（変更なし） ===
-			if (deleteIndex != -1)
-			{
-				int delCount = 1;
-				if (context.score.layers[deleteIndex].isFolder) {
-					while (deleteIndex + delCount < context.score.layers.size() && context.score.layers[deleteIndex + delCount].inFolder) {
-						delCount++;
-					}
-				}
-
-				if (context.score.layers.size() - delCount >= 1)
-				{
-					Score prev = context.score;
-
-					std::unordered_set<int> notesToDelete;
-					for (const auto& [id, note] : context.score.notes) {
-						if (note.layer >= deleteIndex && note.layer < deleteIndex + delCount) notesToDelete.insert(id);
-					}
-
-					for (auto id : notesToDelete) {
-						auto notePos = context.score.notes.find(id);
-						if (notePos == context.score.notes.end()) continue;
-
-						Note& note = notePos->second;
-						if (note.getType() != NoteType::Hold && note.getType() != NoteType::HoldEnd) {
-							if (note.getType() == NoteType::HoldMid && context.score.holdNotes.count(note.parentID)) {
-								std::vector<HoldStep>& steps = context.score.holdNotes.at(note.parentID).steps;
-								auto stepIt = std::find_if(steps.cbegin(), steps.cend(), [id](const HoldStep& s) { return s.ID == id; });
-								if (stepIt != steps.cend()) steps.erase(stepIt);
-							}
-							context.score.notes.erase(id);
-						} else {
-							const HoldNote& hold = context.score.holdNotes.at(note.getType() == NoteType::Hold ? note.ID : note.parentID);
-							context.score.notes.erase(hold.start.ID);
-							context.score.notes.erase(hold.end);
-							for (const auto& step : hold.steps) context.score.notes.erase(step.ID);
-							context.score.holdNotes.erase(hold.start.ID);
-						}
-					}
-
-					std::unordered_set<int> hiSpeedsToDelete;
-					for (const auto& [id, hs] : context.score.hiSpeedChanges) {
-						if (hs.layer >= deleteIndex && hs.layer < deleteIndex + delCount) hiSpeedsToDelete.insert(id);
-					}
-					for (auto id : hiSpeedsToDelete) context.score.hiSpeedChanges.erase(id);
-
-					for (auto it = context.selectedNotes.begin(); it != context.selectedNotes.end(); ) {
-						if (!context.score.notes.count(*it)) it = context.selectedNotes.erase(it);
-						else ++it;
-					}
-					for (auto it = context.selectedHiSpeedChanges.begin(); it != context.selectedHiSpeedChanges.end(); ) {
-						if (!context.score.hiSpeedChanges.count(*it)) it = context.selectedHiSpeedChanges.erase(it);
-						else ++it;
-					}
-
-					context.score.layers.erase(context.score.layers.begin() + deleteIndex, context.score.layers.begin() + deleteIndex + delCount);
-					for (auto& [_, note] : context.score.notes) if (note.layer >= deleteIndex + delCount) note.layer -= delCount;
-					for (auto& [_, hiSpeed] : context.score.hiSpeedChanges) if (hiSpeed.layer >= deleteIndex + delCount) hiSpeed.layer -= delCount;
-					
-					if (context.selectedLayer >= deleteIndex && context.selectedLayer < deleteIndex + delCount) context.selectedLayer = 0;
-					else if (context.selectedLayer >= deleteIndex + delCount) context.selectedLayer -= delCount;
-
-					context.pushHistory("Delete Layer/Folder", prev, context.score);
-				}
-			}
-
 			if (toggleHideIndex != -1)
 			{
 				Score prev = context.score;
@@ -2067,43 +2069,150 @@ namespace MikuMikuWorld
 			if (soloIndex != -1)
 			{
 				Score prev = context.score;
-				for (int i = 0; i < context.score.layers.size(); ++i)
-					context.score.layers[i].hidden = (i != soloIndex);
-				context.pushHistory("Solo Layer", prev, context.score);
+				if (activeSoloIndex == soloIndex)
+				{
+					for (int i = 0; i < context.score.layers.size() && i < preSoloHiddenStates.size(); ++i)
+					{
+						context.score.layers[i].hidden = preSoloHiddenStates[i];
+					}
+					activeSoloIndex = -1;
+				}
+				else
+				{
+					if (activeSoloIndex == -1)
+					{
+						preSoloHiddenStates.clear();
+						for (const auto& l : context.score.layers) preSoloHiddenStates.push_back(l.hidden);
+					}
+					for (int i = 0; i < context.score.layers.size(); ++i)
+					{
+						context.score.layers[i].hidden = (i != soloIndex);
+					}
+					activeSoloIndex = soloIndex;
+				}
+				context.pushHistory("Toggle Solo Layer", prev, context.score);
+			}
+
+			// =====================================================================
+			// 日本語化されたポップアップ
+			// =====================================================================
+			if (ImGui::BeginPopupModal(getString("layer_delete_confirm"), NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+			{
+				ImGui::Text("%s", getString("layer_delete_msg1"));
+				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", getString("layer_delete_msg2"));
+				ImGui::Separator();
+				
+				if (ImGui::Button(getString("yes"), ImVec2(120, 0))) {
+					doDeleteLayer = true;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SetItemDefaultFocus();
+				ImGui::SameLine();
+				if (ImGui::Button(getString("cancel"), ImVec2(120, 0))) {
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::BeginPopupModal(getString("layer_merge_confirm"), NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+			{
+				ImGui::Text("%s", getString("layer_merge_msg"));
+				ImGui::Separator();
+				
+				if (ImGui::Button(getString("yes"), ImVec2(120, 0))) {
+					doMergeLayer = true;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SetItemDefaultFocus();
+				ImGui::SameLine();
+				if (ImGui::Button(getString("cancel"), ImVec2(120, 0))) {
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndPopup();
 			}
 		}
-
 		ImGui::End();
 
-		// 以下はポップアップ呼び出し処理（変更なし）
-		if (dialogOpen)
+		if (doMergeLayer)
 		{
-			if (renameIndex == -2) ImGui::OpenPopup("Create Folder");
-			else if (renameIndex >= 0) ImGui::OpenPopup(MODAL_TITLE("layer_rename"));
-			else ImGui::OpenPopup(MODAL_TITLE("create_layer"));
-			dialogOpen = false;
+			int mergePattern = context.selectedLayer;
+			Score prev = context.score;
+			context.score.layers.erase(context.score.layers.begin() + mergePattern);
+			for (auto& [_, note] : context.score.notes)
+			{
+				if (note.layer > mergePattern) note.layer -= 1;
+			}
+			for (auto& [_, hiSpeed] : context.score.hiSpeedChanges)
+			{
+				if (hiSpeed.layer > mergePattern) hiSpeed.layer -= 1;
+			}
+			context.pushHistory("Merge Layer", prev, context.score);
 		}
 
-		if (updateCreationDialog() == DialogResult::Ok)
+		if (doDeleteLayer)
 		{
-			if (renameIndex >= 0)
-			{
-				context.score.layers[renameIndex].name = layerName;
-			}
-			else
-			{
-				Layer newLayer;
-				newLayer.name = layerName;
-				newLayer.isFolder = (renameIndex == -2);
-				context.score.layers.push_back(newLayer);
-				
-				if (!newLayer.isFolder) {
-					id_t id = getNextHiSpeedID();
-					context.score.hiSpeedChanges[id] = { id, 0, 1, static_cast<int>(context.score.layers.size()) - 1 };
+			int deleteIndex = context.selectedLayer;
+			int delCount = 1;
+			if (context.score.layers[deleteIndex].isFolder) {
+				while (deleteIndex + delCount < context.score.layers.size() && context.score.layers[deleteIndex + delCount].inFolder) {
+					delCount++;
 				}
 			}
-			renameIndex = -1;
-			layerName.clear();
+
+			if (context.score.layers.size() - delCount >= 1)
+			{
+				Score prev = context.score;
+
+				std::unordered_set<int> notesToDelete;
+				for (const auto& [id, note] : context.score.notes) {
+					if (note.layer >= deleteIndex && note.layer < deleteIndex + delCount) notesToDelete.insert(id);
+				}
+
+				for (auto id : notesToDelete) {
+					auto notePos = context.score.notes.find(id);
+					if (notePos == context.score.notes.end()) continue;
+
+					Note& note = notePos->second;
+					if (note.getType() != NoteType::Hold && note.getType() != NoteType::HoldEnd) {
+						if (note.getType() == NoteType::HoldMid && context.score.holdNotes.count(note.parentID)) {
+							std::vector<HoldStep>& steps = context.score.holdNotes.at(note.parentID).steps;
+							auto stepIt = std::find_if(steps.cbegin(), steps.cend(), [id](const HoldStep& s) { return s.ID == id; });
+							if (stepIt != steps.cend()) steps.erase(stepIt);
+						}
+						context.score.notes.erase(id);
+					} else {
+						const HoldNote& hold = context.score.holdNotes.at(note.getType() == NoteType::Hold ? note.ID : note.parentID);
+						context.score.notes.erase(hold.start.ID);
+						context.score.notes.erase(hold.end);
+						for (const auto& step : hold.steps) context.score.notes.erase(step.ID);
+						context.score.holdNotes.erase(hold.start.ID);
+					}
+				}
+
+				std::unordered_set<int> hiSpeedsToDelete;
+				for (const auto& [id, hs] : context.score.hiSpeedChanges) {
+					if (hs.layer >= deleteIndex && hs.layer < deleteIndex + delCount) hiSpeedsToDelete.insert(id);
+				}
+				for (auto id : hiSpeedsToDelete) context.score.hiSpeedChanges.erase(id);
+
+				for (auto it = context.selectedNotes.begin(); it != context.selectedNotes.end(); ) {
+					if (!context.score.notes.count(*it)) it = context.selectedNotes.erase(it);
+					else ++it;
+				}
+				for (auto it = context.selectedHiSpeedChanges.begin(); it != context.selectedHiSpeedChanges.end(); ) {
+					if (!context.score.hiSpeedChanges.count(*it)) it = context.selectedHiSpeedChanges.erase(it);
+					else ++it;
+				}
+
+				context.score.layers.erase(context.score.layers.begin() + deleteIndex, context.score.layers.begin() + deleteIndex + delCount);
+				for (auto& [_, note] : context.score.notes) if (note.layer >= deleteIndex + delCount) note.layer -= delCount;
+				for (auto& [_, hiSpeed] : context.score.hiSpeedChanges) if (hiSpeed.layer >= deleteIndex + delCount) hiSpeed.layer -= delCount;
+				
+				if (context.selectedLayer >= deleteIndex && context.selectedLayer < deleteIndex + delCount) context.selectedLayer = 0;
+				else if (context.selectedLayer >= deleteIndex + delCount) context.selectedLayer -= delCount;
+
+				context.pushHistory("Delete Layer/Folder", prev, context.score);
+			}
 		}
 	}
 
@@ -2171,44 +2280,173 @@ namespace MikuMikuWorld
 
 	void WaypointsWindow::update(ScoreContext& context)
 	{
+		static int renameIndex = -1;
+		static std::string waypointName = "";
+		static bool focusRenameInput = false;
+		static int selectedWaypointIndex = -1;
+		static bool descendingOrder = false;
+
+		auto getContrastColor = [](const ImVec4& bg) -> ImVec4 {
+			float luminance = bg.x * 0.299f + bg.y * 0.587f + bg.z * 0.114f;
+			return luminance > 0.5f ? ImVec4(0.1f, 0.1f, 0.1f, 1.0f) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+		};
+
+		ImVec4 activeBgColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
+		ImVec4 activeTextColor = getContrastColor(activeBgColor);
+
 		if (ImGui::Begin(IMGUI_TITLE(ICON_FA_LOCATION_ARROW, "waypoints")))
 		{
 			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 			float waypointButtonHeight = ImGui::GetFrameHeight();
-			float windowHeight = ImGui::GetContentRegionAvail().y - waypointButtonHeight * 1 -
-			                     ImGui::GetStyle().WindowPadding.y * 2;
+
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 4));
+
+			if (UI::transparentButton(descendingOrder ? ICON_FA_CHEVRON_UP : ICON_FA_CHEVRON_DOWN, ImVec2(waypointButtonHeight, waypointButtonHeight), false))
+			{
+				descendingOrder = !descendingOrder;
+			}
+			UI::tooltip(descendingOrder ? getString("sort_asc") : getString("sort_desc")); // 日本語化
+
+			float rightWpWidth = (waypointButtonHeight * 2.0f) + (4.0f * 1.0f);
+			ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - rightWpWidth);
+
+			if (UI::transparentButton(ICON_FA_PLUS, ImVec2(waypointButtonHeight, waypointButtonHeight), false))
+			{
+				Waypoint newWp{ getString("new_waypoint"), context.currentTick }; // 日本語化
+				context.score.waypoints.push_back(newWp);
+				
+				std::sort(context.score.waypoints.begin(), context.score.waypoints.end(),
+				          [](const Waypoint& a, const Waypoint& b) { return a.tick < b.tick; });
+
+				auto it = std::find_if(context.score.waypoints.begin(), context.score.waypoints.end(),
+					[&](const Waypoint& w) { return w.tick == newWp.tick && w.name == newWp.name; });
+				
+				if (it != context.score.waypoints.end()) {
+					renameIndex = std::distance(context.score.waypoints.begin(), it);
+					waypointName = newWp.name;
+					selectedWaypointIndex = renameIndex;
+					focusRenameInput = true;
+				}
+			}
+			UI::tooltip(getString("create_waypoint"));
+			ImGui::SameLine();
+
+			bool canDelete = selectedWaypointIndex >= 0 && selectedWaypointIndex < context.score.waypoints.size();
+			if (!canDelete) ImGui::BeginDisabled();
+			if (UI::transparentButton(ICON_FA_TRASH, ImVec2(waypointButtonHeight, waypointButtonHeight), false))
+			{
+				context.score.waypoints.erase(context.score.waypoints.begin() + selectedWaypointIndex);
+				if (selectedWaypointIndex >= context.score.waypoints.size()) selectedWaypointIndex--; 
+				renameIndex = -1;
+			}
+			if (!canDelete) ImGui::EndDisabled();
+			UI::tooltip(getString("delete"));
+
+			ImGui::PopStyleVar();
+			ImGui::Separator();
+
+			float windowHeight = ImGui::GetContentRegionAvail().y - ImGui::GetStyle().WindowPadding.y;
 
 			if (ImGui::BeginChild("waypoints_child_window", ImVec2(-1, windowHeight), true))
 			{
-				int index = -1;
-				for (const auto& waypoint : context.score.waypoints)
+				ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable;
+				if (ImGui::BeginTable("waypoints_table", 2, tableFlags))
 				{
-					++index;
-					ImGui::PushID(index);
-
-					if (ImGui::Button(
-					        waypoint.name.c_str(),
-					        ImVec2(ImGui::GetContentRegionAvail().x, waypointButtonHeight)))
+					ImGui::TableSetupColumn(getString("name"), ImGuiTableColumnFlags_WidthStretch); // 日本語化
+					ImGui::TableSetupColumn(getString("time"), ImGuiTableColumnFlags_WidthFixed, 140.0f); // 日本語化
+					
+					for (int i = 0; i < context.score.waypoints.size(); ++i)
 					{
-						context.currentTick = waypoint.tick;
-						scrollTimeline(context, waypoint.tick);
+						int index = descendingOrder ? (context.score.waypoints.size() - 1 - i) : i;
+						auto& waypoint = context.score.waypoints[index];
+						
+						ImGui::PushID(index);
+						ImGui::TableNextRow(0, waypointButtonHeight);
+						
+						ImGui::TableSetColumnIndex(0); 
+
+						ImVec2 startPos = ImGui::GetCursorScreenPos();
+						bool isSelected = (index == selectedWaypointIndex);
+
+						if (isSelected)
+						{
+							ImGui::PushStyleColor(ImGuiCol_Header, activeBgColor);
+							ImGui::PushStyleColor(ImGuiCol_HeaderHovered, activeBgColor);
+							ImGui::PushStyleColor(ImGuiCol_Text, activeTextColor); 
+						}
+
+						if (ImGui::Selectable((std::string("##wp_row_") + std::to_string(index)).c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap, ImVec2(0, waypointButtonHeight)))
+						{
+							selectedWaypointIndex = index;
+							context.currentTick = waypoint.tick;
+							scrollTimeline(context, waypoint.tick);
+						}
+
+						if (isSelected) ImGui::PopStyleColor(3);
+
+						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+						{
+							renameIndex = index;
+							waypointName = waypoint.name;
+							focusRenameInput = true;
+							selectedWaypointIndex = index;
+						}
+
+						ImGui::SetCursorScreenPos(ImVec2(startPos.x + ImGui::GetStyle().FramePadding.x, startPos.y));
+
+						if (renameIndex == index)
+						{
+							ImGui::SetNextItemWidth(-1);
+							if (focusRenameInput)
+							{
+								ImGui::SetKeyboardFocusHere();
+								focusRenameInput = false;
+							}
+							
+							if (ImGui::InputText((std::string("##wprename_") + std::to_string(index)).c_str(), &waypointName, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
+							{
+								context.score.waypoints[index].name = waypointName;
+								renameIndex = -1;
+							}
+							else if (ImGui::IsItemDeactivated())
+							{
+								if (ImGui::IsKeyPressed(ImGuiKey_Escape)) renameIndex = -1;
+								else { context.score.waypoints[index].name = waypointName; renameIndex = -1; }
+							}
+						}
+						else
+						{
+							ImGui::AlignTextToFramePadding();
+							ImGui::TextUnformatted(waypoint.name.c_str());
+						}
+
+						ImGui::TableSetColumnIndex(1);
+						
+						int measure = accumulateMeasures(waypoint.tick, TICKS_PER_BEAT, context.score.timeSignatures) + 1;
+						float time = accumulateDuration(waypoint.tick, TICKS_PER_BEAT, context.score.tempoChanges);
+						char timeStr[64];
+						// 小節の表示も日本語化
+						snprintf(timeStr, sizeof(timeStr), "%s %d (%02d:%02d)", getString("measure"), measure, (int)time / 60, (int)std::fmod(time, 60.0f));
+
+						ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + ImGui::GetStyle().ItemSpacing.x, startPos.y));
+						
+						if (isSelected) 
+							ImGui::PushStyleColor(ImGuiCol_Text, activeTextColor);
+						else 
+							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.75f, 0.75f, 0.75f, 1.0f)); 
+							
+						ImGui::AlignTextToFramePadding();
+						ImGui::Text("%s", timeStr);
+						ImGui::PopStyleColor();
+
+						ImGui::PopID();
 					}
-					ImGui::PopID();
+					ImGui::EndTable();
 				}
 			}
 			ImGui::EndChild();
-			ImGui::Separator();
-
-			if (ImGui::Button(getString("create_waypoint"), ImVec2(-1, waypointButtonHeight)))
-			{
-				context.score.waypoints.push_back(Waypoint{ "New Waypoint", context.currentTick });
-				std::sort(context.score.waypoints.begin(), context.score.waypoints.end(),
-				          [](const Waypoint& a, const Waypoint& b) { return a.tick < b.tick; });
-			}
-
 			ImGui::PopStyleColor();
 		}
-
 		ImGui::End();
 	}
 }
