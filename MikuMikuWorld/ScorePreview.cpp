@@ -469,30 +469,36 @@ namespace MikuMikuWorld
 		if (current_tm >= segment.endTime)
 			continue;
 
-		// =======================================================================================
-		// ★ 完全修正版：空間の進行度(Y)を先に求め、そこから時間割合(X)を逆算する実機アプローチ
-		// =======================================================================================
-		
-		// 1. ノーツ始点・終点の「生」の空間進行度 (1.0 = 判定ライン)
-		double head_raw_progress = 1.0 - (segment.headTime - current_stm) / noteDuration;
-		double tail_raw_progress = 1.0 - (segment.tailTime - current_stm) / noteDuration;
-
-		// 2. 画面の表示範囲 (0.0 ～ 1.0) で切り捨てる (これで判定ラインを突き抜けなくなります)
-		double spaceProgressStart = std::clamp(head_raw_progress, 0.0, 1.0);
-		double spaceProgressEnd   = std::clamp(tail_raw_progress, 0.0, 1.0);
-
-		// スライドの描画範囲が完全に画面外に潰れてしまった場合はスキップ
-		if (std::abs(spaceProgressStart - spaceProgressEnd) < 1e-6)
+		if (std::abs(segment.headTime - segment.tailTime) < 1e-6)
 			continue;
 
-		// 3. 切り捨てられた空間進行度に対応する「時間割合 (0.0~1.0)」を逆算
-		double timeFracStart = 0.0;
-		double timeFracEnd   = 1.0;
-		if (std::abs(tail_raw_progress - head_raw_progress) > 1e-6)
+		// =======================================================================================
+		// ★ 完全修正版：STM補間（曲線の維持）と、正確なアンカー固定（途切れ防止）のハイブリッド
+		// =======================================================================================
+		
+		double start_stm = segment.headTime;
+		double start_time = segment.startTime;
+
+		// ノーツが判定ラインを越えた（ホールド中）場合、始点を「現在のSTM」と「現在の時間」に強制固定する
+		// これにより、推測計算によるズレが消滅し、絶対に判定ライン（Y=1.0）から帯が途切れません。
+		if (current_tm > segment.startTime)
 		{
-			timeFracStart = std::clamp(unlerpD(head_raw_progress, tail_raw_progress, spaceProgressStart), 0.0, 1.0);
-			timeFracEnd   = std::clamp(unlerpD(head_raw_progress, tail_raw_progress, spaceProgressEnd), 0.0, 1.0);
+			start_stm = current_stm;
+			start_time = current_tm;
 		}
+
+		double stm_top = current_stm + 1.2 * noteDuration;
+		double stm_bottom = current_stm - 0.2 * noteDuration;
+
+		// 画面に映る範囲のみを計算するカリング処理（元のコードの考え方と同じ）
+		double p_view_a = unlerpD(start_stm, segment.tailTime, stm_bottom);
+		double p_view_b = unlerpD(start_stm, segment.tailTime, stm_top);
+		double p_min = std::clamp(std::min(p_view_a, p_view_b), 0.0, 1.0);
+		double p_max = std::clamp(std::max(p_view_a, p_view_b), 0.0, 1.0);
+
+		if (p_min >= p_max)
+			continue;
+
 		// =======================================================================================
 
 		float holdStartCenter = Engine::getNoteCenter(holdStart) * mirror;
@@ -521,9 +527,9 @@ namespace MikuMikuWorld
 		const auto ease = getEaseFunction(segment.ease);
 		float startLeft = segment.headLeft, startRight = segment.headRight, endLeft = segment.tailLeft, endRight = segment.tailRight;
 
-		// 分割数の計算 (空間Y座標を使用)
-		double start_y = Engine::approachProgress(spaceProgressStart);
-		double end_y   = Engine::approachProgress(spaceProgressEnd);
+		// 分割数の計算 (元のSTMを用いたロジックを維持)
+		double start_y = Engine::approach(start_stm - noteDuration, start_stm, current_stm);
+		double end_y   = Engine::approach(segment.tailTime - noteDuration, segment.tailTime, current_stm);
 
 		int steps = 10;
 		if (segment.ease == EaseType::Linear)
@@ -531,7 +537,11 @@ namespace MikuMikuWorld
 			double mid_travel = (start_y + end_y) / 2.0;
 			double perspective_factor = std::pow(std::max(0.1, mid_travel), 0.8);
 			double x_diff_max = std::max(std::abs(startLeft - endLeft), std::abs(startRight - endRight));
-			double x_diff = (x_diff_max * 2.5 / perspective_factor) * std::abs(timeFracEnd - timeFracStart);
+			
+			// Xの移動量計算には時間割合(time_frac)を使う
+			double t_frac_start = unlerpD(segment.startTime, segment.endTime, start_time);
+			double t_frac_end   = 1.0; 
+			double x_diff = (x_diff_max * 2.5 / perspective_factor) * std::abs(t_frac_end - t_frac_start);
 			double curve_change_scale = std::pow(x_diff, 0.8);
 			steps = std::max(1, static_cast<int>(std::ceil(curve_change_scale * 10.0)));
 		}
@@ -541,10 +551,13 @@ namespace MikuMikuWorld
 			double ref_start_lane = std::abs(startLeft - endLeft) > std::abs(startRight - endRight) ? startLeft : startRight;
 			double ref_end_lane = std::abs(startLeft - endLeft) > std::abs(startRight - endRight) ? endLeft : endRight;
 			
+			double t_frac_start = unlerpD(segment.startTime, segment.endTime, start_time);
+			double t_frac_end   = 1.0; 
+
 			double pos_offset_this_side = 0.0;
 			for (double r : {0.25, 0.75}) {
-				double progress = lerpD(timeFracStart, timeFracEnd, r);
-				double interp_frac = ease(0.0f, 1.0f, (float)progress); 
+				double time_frac = lerpD(t_frac_start, t_frac_end, r);
+				double interp_frac = ease(0.0f, 1.0f, (float)time_frac); 
 				double y = lerpD(start_y, end_y, r);
 				double lane = lerpD(ref_start_lane, ref_end_lane, interp_frac);
 				double ref_pos = lerpD(ref_start_lane, ref_end_lane, r);
@@ -552,15 +565,18 @@ namespace MikuMikuWorld
 				double compensation_factor = std::pow(std::max(0.1, y), 0.8);
 				pos_offset_this_side += screen_offset / compensation_factor;
 			}
-			pos_offset = pos_offset_this_side * std::pow(std::abs(timeFracEnd - timeFracStart), 0.7);
+			pos_offset = pos_offset_this_side * std::pow(std::abs(t_frac_end - t_frac_start), 0.7);
 			double curve_change_scale = std::pow(pos_offset, 0.4) * 2.0;
 			steps = std::max(1, static_cast<int>(std::ceil(curve_change_scale * 10.0)));
 		}
 		steps = std::clamp(steps, 1, 200);
 
+		// ==============================================================================
+
 		if (isSegmentActivated && context.score.holdNotes.at(holdStart.ID).startType == HoldNoteType::Normal)
 		{
-			float l = ease(startLeft, endLeft, (float)timeFracStart), r = ease(startRight, endRight, (float)timeFracStart);
+			double base_frac = unlerpD(segment.startTime, segment.endTime, start_time);
+			float l = ease(startLeft, endLeft, (float)base_frac), r = ease(startRight, endRight, (float)base_frac);
 			drawNoteBase(renderer, holdStart, l, r, 1.f, segment.activeTime / total_tm);
 			if (holdStart.friction) drawTraceDiamond(renderer, holdStart, l, r, 1.f);
 		}
@@ -579,14 +595,19 @@ namespace MikuMikuWorld
 			double headProgress = segment.tailStepIndex / totalJoints;
 			double tailProgress = (segment.tailStepIndex + 1) / totalJoints;
 
-			holdStartProgress = lerpD(headProgress, tailProgress, timeFracStart);
-			holdEndProgress = lerpD(headProgress, tailProgress, timeFracEnd);
+			double base_frac = unlerpD(segment.startTime, segment.endTime, start_time);
+			holdStartProgress = lerpD(headProgress, tailProgress, base_frac);
+			holdEndProgress = lerpD(headProgress, tailProgress, 1.0);
 		}
 
 		double from_percentage = 0;
+		
 		// ループ初期値の設定
-		double stepStart_timeFrac = timeFracStart;
-		double stepTop = Engine::approachProgress(spaceProgressStart);
+		double stepStart_stm = lerpD(start_stm, segment.tailTime, p_min);
+		double stepTop = Engine::approach(stepStart_stm - noteDuration, stepStart_stm, current_stm);
+
+		double stepStart_time = lerpD(start_time, segment.endTime, p_min);
+		double stepStart_timeFrac = unlerpD(segment.startTime, segment.endTime, stepStart_time);
 
 		auto model = DirectX::XMMatrixIdentity();
 		float baseAlpha = segment.isGuide ? config.pvGuideAlpha : config.pvHoldAlpha;
@@ -594,16 +615,16 @@ namespace MikuMikuWorld
 
 		for (int i = 0; i < steps; i++)
 		{
-			double to_percentage = double(i + 1) / steps;
+			double to_p = lerpD(p_min, p_max, (double)(i + 1) / steps);
 			
-			// 時間割合の補間 (X座標用)
-			double stepEnd_timeFrac = lerpD(timeFracStart, timeFracEnd, to_percentage);
-			
-			// 空間割合の補間 (Y座標用)
-			double stepEnd_spaceProgress = lerpD(spaceProgressStart, spaceProgressEnd, to_percentage);
-			double stepBottom = Engine::approachProgress(stepEnd_spaceProgress);
+			// Y座標用には「STM」を補間して使う（純正コードの美しい曲線を維持）
+			double stepEnd_stm = lerpD(start_stm, segment.tailTime, to_p);
+			double stepBottom = Engine::approach(stepEnd_stm - noteDuration, stepEnd_stm, current_stm);
 
-			// X座標の計算には必ず時間的割合(timeFrac)を使用する
+			// X座標用には「時間割合」を補間して使う（レーンの移動が時間ベースで正確になる）
+			double stepEnd_time = lerpD(start_time, segment.endTime, to_p);
+			double stepEnd_timeFrac = unlerpD(segment.startTime, segment.endTime, stepEnd_time);
+
 			float stepStartLeft = ease(startLeft, endLeft, (float)stepStart_timeFrac);
 			float   stepEndLeft = ease(startLeft, endLeft, (float)stepEnd_timeFrac);
 			float stepStartRight = ease(startRight, endRight, (float)stepStart_timeFrac);
@@ -636,6 +657,7 @@ namespace MikuMikuWorld
 			{
 				const HoldNote& hold = context.score.holdNotes.at(holdStart.ID);
 				double startProg = lerpD(holdStartProgress, holdEndProgress, from_percentage);
+				double to_percentage = double(i + 1) / steps;
 				double endProg = lerpD(holdStartProgress, holdEndProgress, to_percentage);
 				float startAlpha = baseAlpha;
 				float endAlpha = baseAlpha;
@@ -656,6 +678,7 @@ namespace MikuMikuWorld
 				spr_x2 = segmentSprite.getX() + segmentSprite.getWidth();
 				spr_y1 = segmentSprite.getY() + segmentSprite.getHeight(); 
 				spr_y2 = segmentSprite.getY();
+				from_percentage = to_percentage;
 			}
 			else
 			{
@@ -688,11 +711,9 @@ namespace MikuMikuWorld
 				renderer->pushQuad(vPos, uv, model, toFloat4(defaultTint, baseAlpha), (int)texture.getID(), zIndex);
 			}
 			
-			from_percentage = to_percentage;
-			
 			// ループ終端の更新処理
-			stepStart_timeFrac = stepEnd_timeFrac;
 			stepTop = stepBottom;
+			stepStart_timeFrac = stepEnd_timeFrac;
 		}
 	}
 }
