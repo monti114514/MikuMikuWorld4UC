@@ -159,8 +159,33 @@ namespace MikuMikuWorld
 		bool isWindowActive =  !ImGui::IsWindowDocked() || ImGui::GetCurrentWindow()->TabId == ImGui::GetWindowDockNode()->SelectedTabId;
 		if (!isWindowActive) return;
 
+		bool needsRecalc = false;
+
 		if (context.scorePreviewDrawData.noteSpeed != config.pvNoteSpeed)
+			needsRecalc = true;
+
+		if (!needsRecalc && !context.score.notes.empty() && context.scorePreviewDrawData.drawingNotes.empty())
+			needsRecalc = true;
+
+		if (!needsRecalc && !context.scorePreviewDrawData.drawingNotes.empty())
+		{
+			int checkCount = 0;
+			for (const auto& note : context.scorePreviewDrawData.drawingNotes)
+			{
+				if (context.score.notes.find(note.refID) == context.score.notes.end())
+				{
+					needsRecalc = true;
+					break;
+				}
+				if (++checkCount > 5) break; 
+			}
+		}
+
+		if (needsRecalc)
+		{
 			context.scorePreviewDrawData.calculateDrawData(context.score);
+		}
+
 		ImVec2 size = ImGui::GetContentRegionAvail() - ImVec2{ this->getScrollbarWidth(), 0 };
 		ImVec2 position = ImGui::GetCursorScreenPos();
 		ImRect boundaries = ImRect(position, position + size);
@@ -336,10 +361,14 @@ namespace MikuMikuWorld
 
 		for (auto& note : drawData.drawingNotes)
 		{
-			const Note& noteData = context.score.notes.at(note.refID);
+		// 修正：at() を find() に変えて、データが存在するかチェックする
+		auto it = context.score.notes.find(note.refID);
+		if (it == context.score.notes.end()) continue; // 見つからない場合は描画をスキップ
 
-			if (context.currentTick > noteData.tick)
-				continue;
+		const Note& noteData = it->second;
+
+		if (context.currentTick > noteData.tick)
+			continue;
 
 			int layer = std::clamp(noteData.layer, 0, (int)context.score.layers.size() - 1);
 			double scaled_tm = layer_stm[layer];
@@ -480,12 +509,16 @@ namespace MikuMikuWorld
 		if (!isArrayIndexInBounds(transIndex, ResourceManager::spriteTransforms)) return;
 		const SpriteTransform& transform = ResourceManager::spriteTransforms[transIndex];
 
-		for (auto& tick : context.scorePreviewDrawData.drawingHoldTicks)
-		{
-			const Note& noteData = context.score.notes.at(tick.refID);
-			
-			if (context.currentTick > noteData.tick)
-				continue;
+	for (auto& tick : context.scorePreviewDrawData.drawingHoldTicks)
+	{
+		// 存在チェックを行い、データが既に消えていたら描画を安全にスキップする
+		auto it = context.score.notes.find(tick.refID);
+		if (it == context.score.notes.end())
+			continue;
+		const Note& noteData = it->second;
+		
+		if (context.currentTick > noteData.tick)
+			continue;
 
 			int layer = std::clamp(noteData.layer, 0, (int)context.score.layers.size() - 1);
 			double scaled_tm = layer_stm[layer];
@@ -521,8 +554,16 @@ namespace MikuMikuWorld
 
 	for (auto& segment : drawData.drawingHoldSegments)
 	{
-		const Note& holdEnd = context.score.notes.at(segment.endID);
-		const Note& holdStart = context.score.notes.at(holdEnd.parentID);
+		// 存在チェックを行い、データが既に消えていたら描画を安全にスキップする
+		auto endIt = context.score.notes.find(segment.endID);
+		if (endIt == context.score.notes.end())
+			continue;
+		const Note& holdEnd = endIt->second;
+
+		auto startIt = context.score.notes.find(holdEnd.parentID);
+		if (startIt == context.score.notes.end())
+			continue;
+		const Note& holdStart = startIt->second;
 		
 		int layer = std::clamp(holdStart.layer, 0, (int)context.score.layers.size() - 1);
 		double current_stm = layer_stm[layer];

@@ -2284,7 +2284,7 @@ namespace MikuMikuWorld
 		static std::string waypointName = "";
 		static bool focusRenameInput = false;
 		static int selectedWaypointIndex = -1;
-		static bool descendingOrder = false;
+		static bool descendingOrder = true;
 
 		auto getContrastColor = [](const ImVec4& bg) -> ImVec4 {
 			float luminance = bg.x * 0.299f + bg.y * 0.587f + bg.z * 0.114f;

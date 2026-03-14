@@ -2,7 +2,7 @@
 # key, value
 
 language_name, 日本語
-translator, 名無ししししししししししっし｡（@sevenc_nanashi@voskey.icalo.net）、Mint（@MI11435）
+translator, 名無し｡（@sevenc_nanashi@voskey.icalo.net）、Mint（@MI11435）
 
 # menu bar
 file, ファイル
@@ -290,8 +290,9 @@ timeline_hi_speed, タイムライン「ハイスピード」
 zoom_in, ズームイン
 zoom_out, ズームアウト
 
-# --- プレビュー・キーコンフィグ関連（純正MMWの公式翻訳） ---
+# プレビュー・キーコンフィグ関連
 preview, プレビュー
+score_preview, 譜面プレビュー
 notes_speed, ノーツの速さ
 mirror_score, ミラー譜面
 preview_draw_toolbar, プレビューツールバーを描く
