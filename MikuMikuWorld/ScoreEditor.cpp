@@ -5,13 +5,17 @@
 
 #include "Application.h"
 #include "ApplicationConfiguration.h"
+#include "Audio/Sound.h"
 #include "Constants.h"
 #include "File.h"
+#include "Rendering/Texture.h"
 #include "SUS.h"
 #include "NativeScoreSerializer.h"
 #include "UI.h"
 #include "Utilities.h"
+#include <iomanip>
 #include <Windows.h>
+#include <shobjidl.h> // フォルダ選択ダイアログを使用するために追加
 #include <filesystem>
 #include <fstream>
 
@@ -163,6 +167,20 @@ namespace MikuMikuWorld
 
 	void ScoreEditor::update()
 	{
+		// ＝＝＝ 新しいギャラリークラスの呼び出し ＝＝＝
+		galleryWindow.update(config.recentFiles);
+
+		// ギャラリー側で譜面が選択されたら、エディタ本体で読み込む
+		if (!galleryWindow.pendingLoadScore.empty()) {
+			loadScore(galleryWindow.pendingLoadScore);
+			galleryWindow.pendingLoadScore.clear();
+			galleryWindow.open = false;
+		}
+
+		// ギャラリーが開いている間は、背後のエディタのUIを描画しない
+		if (galleryWindow.open) return;
+		// ＝＝＝ ここまで ＝＝＝
+
 		drawMenubar();
 		drawToolbar();
 
@@ -306,8 +324,6 @@ namespace MikuMikuWorld
 		}
 		ImGui::End();
 
-
-
 		if (config.debugEnabled)
 		{
 			debugWindow.update(context, timeline);
@@ -353,10 +369,10 @@ namespace MikuMikuWorld
 		}
 		ImGui::End();
 
-#ifdef DEBUG
-		if (showImGuiDemoWindow)
-			ImGui::ShowDemoWindow(&showImGuiDemoWindow);
-#endif
+		#ifdef DEBUG
+			if (showImGuiDemoWindow)
+				ImGui::ShowDemoWindow(&showImGuiDemoWindow);
+		#endif
 	}
 
 	size_t ScoreEditor::updateRecentFilesList(const std::string& entry)
@@ -388,7 +404,7 @@ namespace MikuMikuWorld
 		context.clearSelection();
 
 		// 追加：描画キャッシュをクリアして古いデータの参照を防ぐ
-		context.scorePreviewDrawData.drawingNotes.clear();
+		// context.scorePreviewDrawData.drawingNotes.clear();
 
 		// New score; nothing to save
 		context.upToDate = true;

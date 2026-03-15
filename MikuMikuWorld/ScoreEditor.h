@@ -1,4 +1,5 @@
 #pragma once
+#include "ChartGalleryWindow.h"
 #include "ScoreEditorWindows.h"
 #include "ScoreSerializeWindow.h"
 #include "ScorePreview.h" // Å© Ç±ÇÍÇí«â¡
@@ -24,6 +25,7 @@ namespace MikuMikuWorld
 		LayersWindow layersWindow{};
 		WaypointsWindow waypointsWindow{};
 		SettingsWindow settingsWindow{};
+		ChartGalleryWindow galleryWindow;
 		RecentFileNotFoundDialog recentFileNotFoundDialog{};
 		AboutDialog aboutDialog{};
 		UpdateAvailableDialog updateAvailableDialog{};

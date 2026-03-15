@@ -177,6 +177,7 @@
     <ClCompile Include="Background.cpp" />
     <ClCompile Include="BinaryReader.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
+    <ClCompile Include="ChartGalleryWindow.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="HistoryManager.cpp" />
     <ClCompile Include="ImGuiManager.cpp" />
@@ -239,6 +240,7 @@
     <ClInclude Include="Background.h" />
     <ClInclude Include="BinaryReader.h" />
     <ClInclude Include="BinaryWriter.h" />
+    <ClInclude Include="ChartGalleryWindow.h" />
     <ClInclude Include="Colors.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="File.h" />

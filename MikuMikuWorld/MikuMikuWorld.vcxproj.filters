@@ -167,6 +167,7 @@
     <ClCompile Include="PreviewEngine.cpp" />
     <ClCompile Include="ScorePreview.cpp" />
     <ClCompile Include="MinMax.cpp" />
+    <ClCompile Include="ChartGalleryWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -367,6 +368,7 @@
     <ClInclude Include="ScorePreview.h" />
     <ClInclude Include="ImageCrop.h" />
     <ClInclude Include="MinMax.h" />
+    <ClInclude Include="ChartGalleryWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Imgui">
